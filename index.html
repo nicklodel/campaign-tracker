@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Campaign Tracker</title>
+<style>
+:root {
+  --bg: #0d0d0f;
+  --panel: #16181e;
+  --panel2: #1e2029;
+  --border: #2e3040;
+  --accent-g: #7ecfb3;
+  --accent-z: #a78bfa;
+  --gold: #f0c060;
+  --red: #e05555;
+  --green: #4ade80;
+  --text: #ccd0e0;
+  --muted: #6b7280;
+  --white: #f0f2ff;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; font-size: 14px; min-height: 100vh; }
+
+/* TABS */
+.char-tabs { display: flex; border-bottom: 2px solid var(--border); background: var(--panel); }
+.char-tab { flex: 1; padding: 14px 20px; cursor: pointer; text-align: center; font-size: 16px; font-weight: 600; letter-spacing: 1px; color: var(--muted); transition: all .2s; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+.char-tab:hover { color: var(--text); }
+.char-tab.active-g { color: var(--accent-g); border-bottom-color: var(--accent-g); }
+.char-tab.active-z { color: var(--accent-z); border-bottom-color: var(--accent-z); }
+
+/* LAYOUT */
+.char-page { display: none; padding: 16px; max-width: 1400px; margin: 0 auto; }
+.char-page.active { display: block; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.full { grid-column: 1 / -1; }
+
+/* PANELS */
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+.panel h3 { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+.panel-g { border-top: 3px solid var(--accent-g); }
+.panel-z { border-top: 3px solid var(--accent-z); }
+
+/* HEADER */
+.char-header { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin-bottom: 14px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.char-name { font-size: 28px; font-weight: 700; color: var(--white); }
+.char-info { color: var(--muted); font-size: 13px; }
+.char-meta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 6px; }
+.meta-pill { background: var(--panel2); border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px; font-size: 12px; }
+
+/* STATS */
+.stats-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+.stat-box { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 6px; text-align: center; cursor: pointer; transition: border-color .2s; }
+.stat-box:hover { border-color: var(--gold); }
+.stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+.stat-mod { font-size: 22px; font-weight: 700; color: var(--white); }
+.stat-val { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* HP */
+.hp-display { text-align: center; }
+.hp-current { font-size: 48px; font-weight: 700; color: var(--green); line-height: 1; }
+.hp-max { font-size: 14px; color: var(--muted); margin-top: 2px; }
+.hp-controls { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
+.hp-input { flex: 1; background: var(--panel2); border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: 6px; font-size: 14px; text-align: center; width: 70px; }
+.hp-input:focus { outline: none; border-color: var(--gold); }
+.btn { padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all .15s; }
+.btn-heal { background: #1a4a2e; color: var(--green); border: 1px solid var(--green); }
+.btn-heal:hover { background: #25613d; }
+.btn-dmg { background: #4a1a1a; color: var(--red); border: 1px solid var(--red); }
+.btn-dmg:hover { background: #611a1a; }
+.btn-add { background: var(--panel2); color: var(--text); border: 1px solid var(--border); }
+.btn-add:hover { border-color: var(--gold); color: var(--gold); }
+.btn-del { background: none; color: var(--muted); border: none; padding: 2px 6px; font-size: 16px; cursor: pointer; }
+.btn-del:hover { color: var(--red); }
+.btn-roll { padding: 5px 12px; border: none; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .5px; transition: all .15s; }
+.btn-roll-g { background: #1a3a2e; color: var(--accent-g); border: 1px solid var(--accent-g); }
+.btn-roll-g:hover { background: #254a3d; }
+.btn-roll-z { background: #2a1a4a; color: var(--accent-z); border: 1px solid var(--accent-z); }
+.btn-roll-z:hover { background: #35255e; }
+.btn-cast { padding: 4px 10px; border-radius: 5px; font-size: 11px; font-weight: 700; background: #2a1a4a; color: var(--accent-z); border: 1px solid var(--accent-z); cursor: pointer; transition: all .15s; }
+.btn-cast:hover { background: #35255e; }
+.btn-cast:disabled { opacity: .4; cursor: not-allowed; }
+
+/* COMBAT STATS */
+.combat-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.combat-box { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 10px; text-align: center; }
+.combat-val { font-size: 24px; font-weight: 700; color: var(--white); }
+.combat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+
+/* SKILLS */
+.skills-list { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
+.skill-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; border-radius: 4px; }
+.skill-row:hover { background: var(--panel2); }
+.skill-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.dot-prof { background: var(--gold); }
+.dot-none { background: var(--border); }
+.skill-name { color: var(--muted); font-size: 12px; flex: 1; }
+.skill-val { font-weight: 600; font-size: 12px; color: var(--text); }
+
+/* EQUIPMENT */
+.eq-list { display: flex; flex-direction: column; gap: 4px; max-height: 320px; overflow-y: auto; }
+.eq-item { display: flex; align-items: center; gap: 8px; padding: 5px 6px; background: var(--panel2); border-radius: 6px; border: 1px solid var(--border); }
+.eq-name { flex: 1; font-size: 13px; }
+.eq-qty-ctrl { display: flex; align-items: center; gap: 4px; }
+.eq-qty-btn { width: 20px; height: 20px; border: 1px solid var(--border); border-radius: 4px; background: var(--panel); color: var(--text); cursor: pointer; font-size: 14px; line-height: 1; display: flex; align-items: center; justify-content: center; }
+.eq-qty-btn:hover { border-color: var(--gold); color: var(--gold); }
+.eq-qty { min-width: 22px; text-align: center; font-size: 13px; font-weight: 600; }
+.add-form { display: flex; gap: 6px; margin-top: 8px; }
+.add-input { flex: 1; background: var(--panel2); border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: 6px; font-size: 13px; }
+.add-input:focus { outline: none; border-color: var(--gold); }
+.add-qty { width: 55px; }
+
+/* ATTACKS */
+.attack-card { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 8px; }
+.attack-name { font-size: 15px; font-weight: 700; color: var(--white); margin-bottom: 4px; }
+.attack-desc { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.attack-formula { font-size: 12px; color: var(--gold); font-family: monospace; margin-bottom: 8px; }
+.attack-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.roll-result { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; margin-top: 8px; font-size: 13px; display: none; }
+.roll-result.show { display: block; }
+.roll-total { font-size: 20px; font-weight: 700; color: var(--gold); }
+.roll-breakdown { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.descarga-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.descarga-label { font-size: 12px; color: var(--muted); }
+.descarga-input { width: 55px; background: var(--panel); border: 1px solid var(--border); color: var(--text); padding: 5px 8px; border-radius: 5px; font-size: 13px; text-align: center; }
+.descarga-input:focus { outline: none; border-color: var(--gold); }
+
+/* FORCE POWERS */
+.fp-tracker { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; text-align: center; }
+.fp-bar-wrap { background: var(--bg); border-radius: 4px; height: 10px; margin: 8px 0; overflow: hidden; }
+.fp-bar { height: 100%; background: linear-gradient(90deg, var(--accent-z), #c084fc); border-radius: 4px; transition: width .4s; }
+.fp-nums { font-size: 24px; font-weight: 700; color: var(--accent-z); }
+.fp-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+.fp-controls { display: flex; gap: 6px; justify-content: center; margin-top: 8px; align-items: center; }
+.power-card { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 6px; overflow: hidden; }
+.power-header { display: flex; align-items: center; gap: 8px; padding: 10px 12px; cursor: pointer; }
+.power-header:hover { background: rgba(167,139,250,.05); }
+.power-title { flex: 1; font-size: 14px; font-weight: 600; color: var(--white); }
+.power-cost { font-size: 11px; color: var(--accent-z); background: rgba(167,139,250,.15); border-radius: 10px; padding: 2px 8px; }
+.power-body { padding: 0 12px 10px; display: none; font-size: 12px; line-height: 1.6; color: var(--muted); }
+.power-body.open { display: block; }
+.power-actions { display: flex; gap: 6px; align-items: center; margin-top: 8px; }
+
+/* ABILITIES */
+.ability-item { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 5px; }
+.ability-top { display: flex; align-items: center; gap: 8px; }
+.ability-name { font-size: 14px; font-weight: 600; color: var(--white); flex: 1; }
+.ability-desc { font-size: 12px; color: var(--muted); margin-top: 5px; line-height: 1.5; }
+
+/* DICE TRAY */
+.dice-tray { position: fixed; bottom: 0; right: 0; width: 300px; background: var(--panel); border-top: 2px solid var(--border); border-left: 2px solid var(--border); border-radius: 10px 0 0 0; padding: 12px; z-index: 100; }
+.dice-tray h4 { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+.dice-btns { display: flex; gap: 5px; flex-wrap: wrap; }
+.d-btn { padding: 6px 10px; background: var(--panel2); border: 1px solid var(--border); color: var(--text); border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.d-btn:hover { border-color: var(--gold); color: var(--gold); }
+.dice-result-area { margin-top: 8px; min-height: 40px; font-size: 13px; }
+.dice-custom { display: flex; gap: 6px; margin-top: 8px; }
+.dice-custom input { flex: 1; background: var(--panel2); border: 1px solid var(--border); color: var(--text); padding: 5px 8px; border-radius: 5px; font-size: 13px; }
+.dice-custom input:focus { outline: none; border-color: var(--gold); }
+
+/* MODAL */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 200; align-items: center; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px; width: 400px; max-width: 95vw; }
+.modal h3 { margin-bottom: 14px; color: var(--white); }
+.modal label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; margin-top: 10px; }
+.modal input, .modal textarea { width: 100%; background: var(--panel2); border: 1px solid var(--border); color: var(--text); padding: 7px 10px; border-radius: 6px; font-size: 13px; }
+.modal textarea { min-height: 80px; resize: vertical; font-family: inherit; }
+.modal input:focus, .modal textarea:focus { outline: none; border-color: var(--gold); }
+.modal-btns { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+.btn-primary { background: var(--gold); color: #000; font-weight: 700; border: none; padding: 7px 16px; border-radius: 6px; cursor: pointer; }
+.btn-cancel { background: var(--panel2); color: var(--muted); border: 1px solid var(--border); padding: 7px 16px; border-radius: 6px; cursor: pointer; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* SAVING THROWS */
+.saves-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.save-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; font-size: 12px; }
+.save-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* SPELLS */
+.spell-level { margin-bottom: 10px; }
+.spell-level-header { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+.spell-level-label { font-size: 11px; color: var(--muted); text-transform: uppercase; }
+.spell-slots { display: flex; gap: 4px; }
+.slot { width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--border); cursor: pointer; }
+.slot.used { background: var(--border); }
+.slot.avail { background: var(--accent-g); border-color: var(--accent-g); }
+.spell-names { display: flex; flex-wrap: wrap; gap: 4px; }
+.spell-tag { background: var(--panel2); border: 1px solid var(--border); border-radius: 10px; padding: 2px 10px; font-size: 12px; }
+
+/* SECTION LAYOUT */
+.section-title { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+
+/* ATTACK ROLL BANNER */
+.atk-roll-banner { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.atk-roll-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+.atk-roll-formula { font-size: 13px; color: var(--gold); font-family: monospace; flex: 1; }
+.atk-roll-result { font-size: 18px; font-weight: 700; color: var(--white); min-width: 36px; text-align: center; }
+.atk-roll-breakdown { font-size: 11px; color: var(--muted); }
+
+/* MOBILE RESPONSIVE */
+@media (max-width: 900px) {
+  .grid3 { grid-template-columns: 1fr 1fr; }
+  .char-page { padding: 10px; }
+}
+@media (max-width: 600px) {
+  .grid3 { grid-template-columns: 1fr; }
+  .char-page { padding: 8px; padding-bottom: 200px; }
+  .stats-grid { grid-template-columns: repeat(3, 1fr); }
+  .char-name { font-size: 22px; }
+  .char-tab { font-size: 14px; padding: 12px 10px; letter-spacing: 0; }
+  .hp-current { font-size: 38px; }
+  .combat-val { font-size: 20px; }
+  .dice-tray { width: 100%; border-left: none; border-radius: 10px 10px 0 0; }
+  .fp-controls { flex-wrap: wrap; }
+  .attack-controls { gap: 6px; }
+  .btn-roll { padding: 8px 12px; font-size: 13px; }
+  .eq-qty-btn { width: 28px; height: 28px; font-size: 16px; }
+  .modal { padding: 16px; }
+  .atk-roll-banner { gap: 8px; }
+}
+@media (max-width: 400px) {
+  .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 5px; }
+  .stat-mod { font-size: 18px; }
+  .combat-stats { grid-template-columns: repeat(3, 1fr); gap: 5px; }
+}
+</style>
+</head>
+<body>
+
+<div class="char-tabs">
+  <div class="char-tab active-g" id="tab-g" onclick="showChar('g')">⚔ GARISON</div>
+  <div class="char-tab" id="tab-z" onclick="showChar('z')">✦ ZANTO</div>
+</div>
+
+<!-- GARISON PAGE -->
+<div class="char-page active" id="page-g">
+  <div class="char-header panel-g" style="border-radius:10px;border:1px solid var(--border);">
+    <div>
+      <div class="char-name" style="color:var(--accent-g)">Garison</div>
+      <div class="char-info">Pícaro Nv. 17 · Humano-Mariquita · Caótico Maligno</div>
+      <div class="char-meta">
+        <span class="meta-pill">XP: 226.140</span>
+        <span class="meta-pill">Pasiva: 16</span>
+        <span class="meta-pill">17d8 HD</span>
+        <span class="meta-pill">Prof: +6</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid3">
+    <!-- STATS -->
+    <div class="panel panel-g">
+      <div class="section-title">Estadísticas</div>
+      <div class="stats-grid" id="g-stats"></div>
+    </div>
+
+    <!-- HP + COMBAT -->
+    <div class="panel panel-g">
+      <div class="section-title">Combate</div>
+      <div class="combat-stats" style="margin-bottom:10px">
+        <div class="combat-box"><div class="combat-val" id="g-ac">23</div><div class="combat-label">CA</div></div>
+        <div class="combat-box"><div class="combat-val" id="g-init">+6</div><div class="combat-label">Iniciativa</div></div>
+        <div class="combat-box"><div class="combat-val" id="g-spd">30</div><div class="combat-label">Velocidad</div></div>
+      </div>
+      <div class="hp-display">
+        <div class="hp-current" id="g-hp-cur">111</div>
+        <div class="hp-max">/ <span id="g-hp-max">111</span> PG máx · Temp: <span id="g-hp-temp">0</span></div>
+      </div>
+      <div class="hp-controls" style="margin-top:10px">
+        <input class="hp-input" id="g-hp-amt" type="number" min="1" value="1" placeholder="Amt">
+        <button class="btn btn-heal" onclick="changeHP('g','heal')">+ Curar</button>
+        <button class="btn btn-dmg" onclick="changeHP('g','dmg')">- Daño</button>
+      </div>
+      <div class="hp-controls" style="margin-top:6px">
+        <input class="hp-input" id="g-temp-amt" type="number" min="0" value="0" placeholder="Temp">
+        <button class="btn btn-add" onclick="setTempHP('g')">Set Temp HP</button>
+        <button class="btn btn-add" onclick="setMaxHP('g')">Set Máx</button>
+      </div>
+    </div>
+
+    <!-- SKILLS -->
+    <div class="panel panel-g">
+      <div class="section-title">Habilidades</div>
+      <div class="skills-list" id="g-skills"></div>
+    </div>
+
+    <!-- EQUIPMENT -->
+    <div class="panel panel-g full">
+      <div class="section-title">Equipamiento <button class="btn btn-add" onclick="openAddEq('g')">+ Añadir</button></div>
+      <div class="eq-list" id="g-eq-list"></div>
+    </div>
+
+    <!-- ATTACKS -->
+    <div class="panel panel-g" style="grid-column: span 2">
+      <div class="section-title">Ataques</div>
+      <div id="g-attacks"></div>
+    </div>
+
+    <!-- SAVING THROWS -->
+    <div class="panel panel-g">
+      <div class="section-title">Tiradas de Salvación</div>
+      <div class="saves-grid" id="g-saves"></div>
+    </div>
+
+    <!-- SPELLS -->
+    <div class="panel panel-g" style="grid-column: span 2">
+      <div class="section-title">Conjuros</div>
+      <div id="g-spells"></div>
+    </div>
+
+    <!-- ABILITIES -->
+    <div class="panel panel-g full">
+      <div class="section-title">Rasgos y Habilidades <button class="btn btn-add" onclick="openAddAbility('g')">+ Añadir</button></div>
+      <div id="g-abilities"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ZANTO PAGE -->
+<div class="char-page" id="page-z">
+  <div class="char-header panel-z" style="border-radius:10px;border:1px solid var(--border);">
+    <div>
+      <div class="char-name" style="color:var(--accent-z)">Zanto</div>
+      <div class="char-info">Jedi Nv. 17 · Goblin · Neutral Bueno</div>
+      <div class="char-meta">
+        <span class="meta-pill">XP: 226.240</span>
+        <span class="meta-pill">Pasiva: 25</span>
+        <span class="meta-pill">13d8 HD</span>
+        <span class="meta-pill">Prof: +6</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid3">
+    <!-- STATS -->
+    <div class="panel panel-z">
+      <div class="section-title">Estadísticas</div>
+      <div class="stats-grid" id="z-stats"></div>
+    </div>
+
+    <!-- HP + COMBAT -->
+    <div class="panel panel-z">
+      <div class="section-title">Combate</div>
+      <div class="combat-stats" style="margin-bottom:10px">
+        <div class="combat-box"><div class="combat-val" id="z-ac">35</div><div class="combat-label">CA</div></div>
+        <div class="combat-box"><div class="combat-val" id="z-init">+5</div><div class="combat-label">Iniciativa</div></div>
+        <div class="combat-box"><div class="combat-val" id="z-spd">35</div><div class="combat-label">Velocidad</div></div>
+      </div>
+      <div class="hp-display">
+        <div class="hp-current" id="z-hp-cur">76</div>
+        <div class="hp-max">/ <span id="z-hp-max">76</span> PG máx · Temp: <span id="z-hp-temp">0</span></div>
+      </div>
+      <div class="hp-controls" style="margin-top:10px">
+        <input class="hp-input" id="z-hp-amt" type="number" min="1" value="1" placeholder="Amt">
+        <button class="btn btn-heal" onclick="changeHP('z','heal')">+ Curar</button>
+        <button class="btn btn-dmg" onclick="changeHP('z','dmg')">- Daño</button>
+      </div>
+      <div class="hp-controls" style="margin-top:6px">
+        <input class="hp-input" id="z-temp-amt" type="number" min="0" value="0" placeholder="Temp">
+        <button class="btn btn-add" onclick="setTempHP('z')">Set Temp HP</button>
+        <button class="btn btn-add" onclick="setMaxHP('z')">Set Máx</button>
+      </div>
+    </div>
+
+    <!-- SKILLS -->
+    <div class="panel panel-z">
+      <div class="section-title">Habilidades</div>
+      <div class="skills-list" id="z-skills"></div>
+    </div>
+
+    <!-- FORCE POINTS -->
+    <div class="panel panel-z full">
+      <div class="section-title">Puntos de Fuerza</div>
+      <div class="fp-tracker">
+        <div class="fp-label">Fuerza Disponible</div>
+        <div class="fp-nums"><span id="z-fp-cur">68</span> / <span id="z-fp-max">68</span></div>
+        <div class="fp-bar-wrap"><div class="fp-bar" id="z-fp-bar" style="width:100%"></div></div>
+        <div class="fp-controls">
+          <input class="hp-input add-qty" id="z-fp-amt" type="number" min="1" value="1" placeholder="Amt">
+          <button class="btn btn-heal" onclick="changeFP('restore')">+ Restaurar</button>
+          <button class="btn btn-dmg" onclick="changeFP('spend')">- Gastar</button>
+          <button class="btn btn-add" onclick="fullRestFP()">Descanso Largo</button>
+          <button class="btn btn-add" onclick="setMaxFP()">Set Máx</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- EQUIPMENT -->
+    <div class="panel panel-z full">
+      <div class="section-title">Equipamiento <button class="btn btn-add" onclick="openAddEq('z')">+ Añadir</button></div>
+      <div class="eq-list" id="z-eq-list"></div>
+    </div>
+
+    <!-- ATTACKS -->
+    <div class="panel panel-z">
+      <div class="section-title">Ataques</div>
+      <div id="z-attacks"></div>
+    </div>
+
+    <!-- SAVING THROWS -->
+    <div class="panel panel-z">
+      <div class="section-title">Tiradas de Salvación</div>
+      <div class="saves-grid" id="z-saves"></div>
+    </div>
+
+    <!-- ABILITIES -->
+    <div class="panel panel-z">
+      <div class="section-title">Rasgos <button class="btn btn-add" onclick="openAddAbility('z')">+ Añadir</button></div>
+      <div id="z-abilities"></div>
+    </div>
+
+    <!-- FORCE POWERS -->
+    <div class="panel panel-z full">
+      <div class="section-title">Poderes de la Fuerza <button class="btn btn-add" onclick="openAddPower()">+ Añadir</button></div>
+      <div id="z-powers"></div>
+    </div>
+  </div>
+</div>
+
+<!-- DICE TRAY -->
+<div class="dice-tray">
+  <h4>🎲 Bandeja de Dados</h4>
+  <div class="dice-btns">
+    <button class="d-btn" onclick="rollQuick(4)">d4</button>
+    <button class="d-btn" onclick="rollQuick(6)">d6</button>
+    <button class="d-btn" onclick="rollQuick(8)">d8</button>
+    <button class="d-btn" onclick="rollQuick(10)">d10</button>
+    <button class="d-btn" onclick="rollQuick(12)">d12</button>
+    <button class="d-btn" onclick="rollQuick(20)">d20</button>
+    <button class="d-btn" onclick="rollQuick(100)">d100</button>
+  </div>
+  <div class="dice-custom">
+    <input id="custom-dice" placeholder="ej: 2d6+3" onkeydown="if(event.key==='Enter')rollCustom()">
+    <button class="d-btn" onclick="rollCustom()">Roll</button>
+  </div>
+  <div class="dice-result-area" id="dice-result"></div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="modal-eq">
+  <div class="modal">
+    <h3>Añadir Objeto</h3>
+    <label>Nombre</label>
+    <input id="eq-name-input" placeholder="Nombre del objeto">
+    <label>Cantidad</label>
+    <input id="eq-qty-input" type="number" value="1" min="1">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-eq')">Cancelar</button>
+      <button class="btn-primary" onclick="confirmAddEq()">Añadir</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-ability">
+  <div class="modal">
+    <h3>Añadir Rasgo / Habilidad</h3>
+    <label>Nombre</label>
+    <input id="ability-name-input" placeholder="Nombre">
+    <label>Descripción</label>
+    <textarea id="ability-desc-input" placeholder="Descripción del rasgo..."></textarea>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-ability')">Cancelar</button>
+      <button class="btn-primary" onclick="confirmAddAbility()">Añadir</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-power">
+  <div class="modal">
+    <h3>Añadir Poder de la Fuerza</h3>
+    <label>Nombre</label>
+    <input id="power-name-input" placeholder="Nombre del poder">
+    <label>Coste (Puntos de Fuerza)</label>
+    <input id="power-cost-input" type="number" value="0" min="0" placeholder="0">
+    <label>Tiempo de uso</label>
+    <input id="power-time-input" placeholder="ej: 1 acción">
+    <label>Descripción</label>
+    <textarea id="power-desc-input" placeholder="Descripción..."></textarea>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-power')">Cancelar</button>
+      <button class="btn-primary" onclick="confirmAddPower()">Añadir</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-stat">
+  <div class="modal">
+    <h3 id="modal-stat-title">Editar Estadística</h3>
+    <label>Valor</label>
+    <input id="modal-stat-val" type="number" min="1" max="30">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-stat')">Cancelar</button>
+      <button class="btn-primary" onclick="confirmEditStat()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== DEFAULT DATA =====
+const DEFAULTS = {
+  g: {
+    stats: { str:19, dex:23, con:13, int:19, wis:11, cha:19 },
+    hp: { max:111, current:111, temp:0 },
+    spellSlots: { 1:{total:4,used:0}, 2:{total:3,used:0}, 3:{total:2,used:0} },
+    equipment: [
+      {name:"Llave cardinal (N/S/E/O)",qty:4},{name:"Pergamino invisibilidad mayor",qty:1},
+      {name:"Clave cripta de la envidia",qty:1},{name:"Mythlyf (daga legendaria)",qty:1},
+      {name:"Copia Mapas Noxdelia",qty:1},{name:"Boceto caduceo de Hermes",qty:1},
+      {name:"Poción de daño",qty:1},{name:"Anillo de Conjuros",qty:1},
+      {name:"Anillo de mímico",qty:1},{name:"Sanguinaria",qty:1},
+      {name:"Poción pequeña",qty:4},{name:"Poción grande",qty:4},
+      {name:"Poción tocha",qty:10},{name:"Poción de descanso",qty:1},
+      {name:"Kit de charlatán",qty:1},{name:"Raciones",qty:12},
+      {name:"Placa aventurero",qty:1},{name:"Espada y arco oscuro",qty:1},
+      {name:"Sombra del viento",qty:1},{name:"Flechas (carcaj)",qty:47},
+      {name:"Flechas con petardos",qty:5},{name:"Flechas de daño",qty:8},
+      {name:"Tenebris",qty:1},{name:"Petardos",qty:4},
+      {name:"Llave catatónica",qty:1},{name:"Bolsa almacenaje mágico",qty:1},
+      {name:"Pociones de disfraz",qty:5},{name:"Gancho de agarre",qty:1},
+      {name:"Diadema de intelecto",qty:1},{name:"Cinturón Gigante Fuerza Menor",qty:1},
+      {name:"Poción gigapotente",qty:1},{name:"Guantes superchería mágica",qty:1},
+      {name:"Escudo y espada de inquisidor",qty:1},{name:"Núcleo inquisidor",qty:1},
+      {name:"Foto corona de Loki",qty:1},{name:"Ballesta Frozenfear",qty:1},
+      {name:"Anillo furtivo confiable",qty:1},{name:"Manto de fuego sacro",qty:1},
+      {name:"Cañón arcano",qty:1},{name:"Esferas de invocación",qty:5},
+      {name:"Anillo CA",qty:1},{name:"Hacha tocha de Godric",qty:1},
+      {name:"Corona del rey de Sansare",qty:1},{name:"Caja del dedeador",qty:1}
+    ],
+    abilities: [
+      {name:"Ataque Furtivo",desc:"+3d6 si tienes ventaja o el enemigo tiene adversario a 5 pies y no tienes desventaja."},
+      {name:"Manos Rápidas",desc:"Acción adicional para Juego de Manos, herramientas de ladrón, o Usar Objeto."},
+      {name:"Talento Seguro",desc:"Al añadir bonificador de competencia a prueba de característica: si sacas 9 o menos en d20, trátalo como 10 (excepto 1)."},
+      {name:"Evasión",desc:"Áreas de efecto: mitad de daño si fallas, ninguno si tienes éxito en salvación."},
+      {name:"Esquiva Asombrosa",desc:"Usar la reacción para reducir a la mitad el daño de un ataque."},
+      {name:"Emboscada Mágica",desc:"Nv.9: Si estás escondido al lanzar un conjuro, el objetivo tiene desventaja en la salvación."},
+      {name:"Sentido Ciego",desc:"Nv.14: Sabes dónde está cualquier criatura escondida/invisible a 10 pies de ti."},
+      {name:"Mente Escurridiza",desc:"Nv.15: Competencia en tiradas de salvación de Sabiduría."},
+      {name:"Afortunado",desc:"3 puntos de suerte. Tirar d20 adicional en ataques, habilidades o salvaciones."},
+      {name:"Actor",desc:"Ventaja en Carisma (Engañar) e Interpretar al hacerte pasar por otra persona."},
+      {name:"Ladrón de Conjuros",desc:"Nv.17: Robar mágicamente el conocimiento de un conjuro de otro lanzador."},
+      {name:"Estallido Arcano Gélido",desc:"Truco: 2 rayos de 1d10 frío a 120 pies (Nv.11: 3, Nv.17: 4). Car+Comp."},
+      {name:"Conocimiento del Helheim",desc:"Con pergamino de hielo: dedicar 1d4+nivel horas para aprender el hechizo."}
+    ]
+  },
+  z: {
+    stats: { str:10, dex:20, con:10, int:12, wis:28, cha:14 },
+    hp: { max:76, current:76, temp:0 },
+    fp: { max:68, current:68 },
+    equipment: [
+      {name:"Kit de ladrón",qty:1},{name:"Placa aventurero",qty:1},
+      {name:"Raciones",qty:1},{name:"Antifaz del zorro gris",qty:1},
+      {name:"Hoja Oculta",qty:2},{name:"Poción pequeña",qty:3},
+      {name:"Poción grande",qty:3},{name:"Guantes de oportunidad",qty:1},
+      {name:"Pasos Fantasma",qty:1},{name:"Raciones extra",qty:10},
+      {name:"Chatarra (scrap)",qty:0},{name:"Ballesta",qty:1},
+      {name:"Explosivos",qty:4},{name:"Pájaros cantores",qty:1},
+      {name:"Motor Rotatorio",qty:1},{name:"Plaga de la ceniza",qty:1},
+      {name:"Placa de diamante aventurero",qty:1},{name:"Batería inagotable",qty:1},
+      {name:"Túnica sabio de las estrellas",qty:1},{name:"Poción tocha",qty:5},
+      {name:"Poción recuperar FP (full)",qty:5},{name:"Pirámide teletransporte Hebelegbt",qty:1},
+      {name:"Sellos Spearcraft/Blue Morning/Hebelegbt",qty:1},{name:"Anillo CA",qty:1},
+      {name:"Casco de nose qué",qty:1},{name:"Cristal de magia púrpura",qty:1},
+      {name:"Bag of holding",qty:1},{name:"Bastón del zorro gris",qty:1}
+    ],
+    abilities: [
+      {name:"Forma III – Soresu",desc:"Postura Defensiva (acc. adicional): reducir velocidad a 0 y sumar mod. Sab a CA. Desviar Disparos (reacción): reducir daño a distancia por Sab+Des; si llega a 0, devolver disparo."},
+      {name:"Forma IV – Ataru",desc:"Golpe en Ráfaga: ataque adicional como acción adicional. Acrobacia con la Fuerza: prueba Atletismo/Acrobacias CD15 durante movimiento → +1 CA y añadir mod. Sab al daño c/c hasta el siguiente turno."},
+      {name:"Antifaz del Zorro Gris – Suerte",desc:"Si un ataque reduciría todos los PG de una pasada, tirar 1d20: con 15+ quedar a 1 PV."},
+      {name:"Antifaz del Zorro Gris – Penetrante",desc:"Tiradas de Engañar/Interpretar portando el antifaz son, como mínimo, respetables. Sacar 1 se trata como 2."},
+      {name:"Guantelete de Oportunidad",desc:"Pifia de ataque enemigo: puedes robarle el arma a cambio de la reacción."},
+      {name:"Pájaros Cantores",desc:"+2 a tiradas de ataque y de daño. Transportarte a la daga."},
+      {name:"Pasos Fantasma",desc:"No dejan huella ni activan trampas. Caminar 1 min en cualquier dirección por tierra, agua o aire."},
+      {name:"Poderes de la Fuerza Persistentes",desc:"Nv.11: el daño de los poderes de la Fuerza aumenta de d6 a d8."},
+      {name:"Aura de Esperanza",desc:"Tú y aliados a 30 pies suman tu mod. Sabiduría a tiradas de salvación (mínimo +1)."},
+      {name:"Defensa contra proyectiles",desc:"1d10 + nivel + Sabiduría (2)."},
+      {name:"Tenacious Force Use",desc:"Nv.15: adversarios tienen desventaja en salvaciones contra tus poderes de la Fuerza."},
+      {name:"Staff Master",desc:"Bastón cuenta como arma sutil. Trato 1d8 (1 mano) / 1d10 (2 manos). Acción adicional para ventaja en Acrobacias o Atletismo siguiente turno."},
+      {name:"Consejero Diplomático",desc:"Doble bonificador de competencia en Persuasión o Perspicacia (elige). Ventaja en 2 tiradas de Carisma por descanso largo."},
+      {name:"Sintonización con la Fuerza",desc:"Detectar pensamientos con la Fuerza dos veces por descanso largo."},
+      {name:"Telequinesis Jedi",desc:"Lanzar Mano de Mago como acc. adicional. Atacar, activar objetos, mover hasta 100 lbs a 30 pies. Por cada PF gastado: +100 lbs y +30 pies. Atraer arma desde 60 pies."},
+      {name:"Sanación Mejorada con la Fuerza",desc:"Nv.6: Gastar PG iguales a la mitad del total de dados de golpe como acción."}
+    ],
+    powers: [
+      {name:"Barrera de la Fuerza",cost:1,time:"1 reacción",desc:"Creas una barrera invisible. Hasta tu próximo turno: +2 CA incluyendo contra el ataque desencadenante. Por cada PF adicional: +1 CA más. Con 7 PF en total: +5 CA a aliados a 10 pies."},
+      {name:"Confusión con la Fuerza",cost:5,time:"1 acción",desc:"Radio 10 pies, alcance 60 pies. Salvación Sab o: sin reacciones, y al inicio de cada turno tira 1d10: 1=moverse en dirección aleatoria, 2-6=no actuar, 7-8=atacar criatura aleatoria c/c, 9-10=actuar normal. Duración: Conc. hasta 1 min."},
+      {name:"Destrucción con la Fuerza",cost:12,time:"1 acción",desc:"Alcance 60 pies. Salvación Des. Fallo: objetivo y criaturas a 10 pies sufren 10d4+50 daño Fuerza. Si reduce a 0 PV: desintegrado. Por cada 2 PF adicionales: +3d4."},
+      {name:"Desarme con la Fuerza",cost:1,time:"1 acción",desc:"Alcance 10 pies. Salvación Fue o pierde su arma hacia ti. 1 PF adicional: atraparla. Sin atrapar: cae 5 pies detrás. Por cada 2 PF adicionales: +5 pies de alcance. 10 PF: afectar a todas criaturas a 10 pies."},
+      {name:"Fantasma de la Fuerza",cost:12,time:"1 acción",desc:"Creas un fantasma de pura Fuerza. PG: 5×nivel Jedi. CA: 13+Des. Ataque: 4d8 daño Fuerza. Órdenes mentales: acción adicional. Duración: Concentración."},
+      {name:"Atracción de la Fuerza",cost:1,time:"1 acción",desc:"Alcance 30 pies. Salvación Fue o: arrastrada 5 pies hacia ti + derribada. +2 PF: 5 pies extra. +5 PF: +5 pies alcance. 5 PF en lugar de 1: afectar a todas criaturas a 30 pies."},
+      {name:"Manto de la Fuerza",cost:3,time:"1 acción",desc:"Te vuelves invisible junto con tu equipo. Duración: Conc. hasta 1 hora. Termina si atacas o usas otro poder."},
+      {name:"Vuelo con la Fuerza",cost:5,time:"1 acción",desc:"Toque. Velocidad de vuelo = velocidad de caminata. Duración: Conc. 10 min. +10 PF: velocidad duplicada. +5 PF: afectar a otra criatura."},
+      {name:"Empuje de la Fuerza",cost:1,time:"1 acción",desc:"Empuja criatura/objeto hasta 250 lbs a 30 pies. Salvación Fue o: empujada 10 pies + derribada. PF adicionales: +5 pies distancia y +50 lbs por punto."},
+      {name:"Trucos Mentales Jedi",cost:4,time:"1 acción",desc:"Sugestión sin componentes. Alcance: 10 pies. Duración: 1 minuto. El objetivo lleva a cabo la actividad sugerida. Si tú o tus compañeros dañáis al objetivo, el efecto termina."},
+      {name:"Recarga de la Fuerza",cost:0,time:"Especial",desc:"CUIDADO: 4 niveles de agotamiento al activar. Beneficios: +1 ataque/turno, +2 CA, alcance/área poderes ×2, daño d8/d10, PF se recargan y regeneras 1d4+Sab+Des/turno, CD+2, ataque+2, velocidad×(5+Sab+Des). Tras 2 rondas: +1 agotamiento por ronda."},
+      {name:"Velocidad de la Fuerza",cost:5,time:"1 acción",desc:"Toque. Velocidad duplicada, +2 CA, ventaja en salvaciones Des, acción adicional (solo ataque/correr/retirarse/esconderse/usar objeto). Duración: Conc. 1 min."},
+      {name:"Golpe Apasionado",cost:4,time:"1 acción",desc:"Alcance 5 pies. Tirada de ataque; si acierta: +2d6 al daño. Por cada 2 PF adicionales: +1d6 más."},
+      {name:"Lanzamiento de Sable",cost:0,time:"1 acción",desc:"Ataque a distancia con alcance 30 pies (daño = daño del arma). El arma vuelve a tu mano. +5 PF: el ataque afecta a todas criaturas en área de 30×5 pies frente a ti."},
+      {name:"Aturdimiento de la Fuerza",cost:2,time:"1 acción",desc:"Alcance 30 pies. Salvación Sab o queda aturdida hasta el final de tu próximo turno. Por cada 2 PF adicionales: +1 objetivo."},
+      {name:"Comunión con la Fuerza",cost:10,time:"1 acción",desc:"Información sobre el plano en radio de 8 km (300 pies en subterráneo): terreno, plantas/animales, seres poderosos, influencias de otros planos, edificaciones. Duración: 1 hora."},
+      {name:"Meditación de Batalla",cost:2,time:"1 acción",desc:"+2 a tiradas de ataque y daño CON ARMAS o con poderes (elige). El primer ataque contra ti en cada asalto tiene desventaja. Duración: 30 min. Por cada 2 PF adicionales: +3 al bonificador."},
+      {name:"Electric Judgment",cost:4,time:"1 acción",desc:"Línea de 60 pies × 5 pies. Salvación Des: 10d4 daño relámpago (mitad si tiene éxito). Enciende objetos inflamables. Por cada 2 PF adicionales más allá de 4: +1d4."},
+      {name:"Force Travel",cost:5,time:"1 acción adicional",desc:"Te teletransportas hasta 40 pies a un espacio desocupado que puedas percibir. 13 PF: funciona como el conjuro Teleport."},
+      {name:"Force Shroud",cost:3,time:"1 acción",desc:"Te vuelves invisible junto con tu equipo. Duración: Conc. hasta 1 hora. Termina si atacas o usas otro poder."},
+      {name:"Sanación Mejorada con la Fuerza",cost:0,time:"1 acción",desc:"Gasta PG iguales a la mitad de tu total de dados de golpe para recuperar esa cantidad de PG."}
+    ]
+  }
+};
+
+// ===== STATE =====
+let state = {};
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem('campaignTracker');
+    if (saved) state = JSON.parse(saved);
+    else resetState();
+  } catch(e) { resetState(); }
+}
+
+function resetState() {
+  state = {
+    g: JSON.parse(JSON.stringify(DEFAULTS.g)),
+    z: JSON.parse(JSON.stringify(DEFAULTS.z))
+  };
+}
+
+function saveState() {
+  localStorage.setItem('campaignTracker', JSON.stringify(state));
+}
+
+// ===== STAT HELPERS =====
+function mod(val) { return Math.floor((val - 10) / 2); }
+function fmtMod(val) { const m = mod(val); return (m >= 0 ? '+' : '') + m; }
+
+const STAT_LABELS = { str:'FUE', dex:'DES', con:'CON', int:'INT', wis:'SAB', cha:'CAR' };
+const SKILL_DATA = {
+  g: [
+    {name:'Acrobacias',key:'dex',prof:true,val:6},{name:'Atletismo',key:'str',prof:false,val:1},
+    {name:'C. Arcano',key:'int',prof:true,val:1},{name:'Engaño',key:'cha',prof:false,val:1},
+    {name:'Historia',key:'int',prof:true,val:4},{name:'Interpretación',key:'cha',prof:true,val:4},
+    {name:'Intimidación',key:'cha',prof:true,val:4},{name:'Investigación',key:'int',prof:true,val:1},
+    {name:'Juego de Manos',key:'dex',prof:true,val:1},{name:'Medicina',key:'wis',prof:false,val:0},
+    {name:'Naturaleza',key:'int',prof:true,val:4},{name:'Percepción',key:'wis',prof:true,val:6},
+    {name:'Perspicacia',key:'wis',prof:true,val:6},{name:'Persuasión',key:'cha',prof:true,val:4},
+    {name:'Religión',key:'int',prof:true,val:4},{name:'Sigilo',key:'dex',prof:false,val:1},
+    {name:'Supervivencia',key:'wis',prof:false,val:0},{name:'T. Animales',key:'wis',prof:false,val:0}
+  ],
+  z: [
+    {name:'Acrobacias',key:'dex',prof:true,val:11},{name:'Atletismo',key:'str',prof:false,val:0},
+    {name:'C. Arcano',key:'int',prof:false,val:1},{name:'Engaño',key:'cha',prof:false,val:2},
+    {name:'Historia',key:'int',prof:false,val:1},{name:'Interpretación',key:'cha',prof:false,val:2},
+    {name:'Intimidación',key:'cha',prof:false,val:2},{name:'Investigación',key:'int',prof:false,val:1},
+    {name:'Juego de Manos',key:'dex',prof:false,val:1},{name:'Medicina',key:'wis',prof:false,val:1},
+    {name:'Naturaleza',key:'int',prof:false,val:1},{name:'Percepción',key:'wis',prof:false,val:1},
+    {name:'Perspicacia',key:'wis',prof:false,val:1},{name:'Persuasión',key:'cha',prof:false,val:2},
+    {name:'Religión',key:'int',prof:false,val:1},{name:'Sigilo',key:'dex',prof:false,val:1},
+    {name:'Supervivencia',key:'wis',prof:true,val:9},{name:'T. Animales',key:'wis',prof:true,val:9}
+  ]
+};
+
+const SAVE_DATA = {
+  g: [{name:'FUE',prof:true,val:4},{name:'DES',prof:true,val:1},{name:'CON',prof:false,val:1},
+       {name:'INT',prof:true,val:1},{name:'SAB',prof:true,val:6},{name:'CAR',prof:false,val:4}],
+  z: [{name:'FUE',prof:false,val:0},{name:'DES',prof:true,val:1},{name:'CON',prof:false,val:0},
+       {name:'INT',prof:true,val:1},{name:'SAB',prof:true,val:1},{name:'CAR',prof:false,val:2}]
+};
+
+// ===== RENDER =====
+function renderAll() {
+  renderStats('g'); renderStats('z');
+  renderHP('g'); renderHP('z');
+  renderSkills('g'); renderSkills('z');
+  renderSaves('g'); renderSaves('z');
+  renderEquipment('g'); renderEquipment('z');
+  renderAbilities('g'); renderAbilities('z');
+  renderAttacksG();
+  renderAttacksZ();
+  renderFP();
+  renderPowers();
+  renderSpells();
+}
+
+function renderStats(ch) {
+  const el = document.getElementById(ch+'-stats');
+  const stats = state[ch].stats;
+  el.innerHTML = Object.entries(stats).map(([key,val]) => `
+    <div class="stat-box" onclick="editStat('${ch}','${key}')">
+      <div class="stat-label">${STAT_LABELS[key]}</div>
+      <div class="stat-mod">${fmtMod(val)}</div>
+      <div class="stat-val">${val}</div>
+    </div>
+  `).join('');
+}
+
+function renderHP(ch) {
+  const hp = state[ch].hp;
+  const cur = document.getElementById(ch+'-hp-cur');
+  cur.textContent = hp.current;
+  const pct = hp.current / hp.max;
+  cur.style.color = pct > .5 ? 'var(--green)' : pct > .25 ? 'var(--gold)' : 'var(--red)';
+  document.getElementById(ch+'-hp-max').textContent = hp.max;
+  document.getElementById(ch+'-hp-temp').textContent = hp.temp;
+}
+
+function renderFP() {
+  const fp = state.z.fp;
+  document.getElementById('z-fp-cur').textContent = fp.current;
+  document.getElementById('z-fp-max').textContent = fp.max;
+  const pct = fp.max > 0 ? (fp.current / fp.max * 100) : 0;
+  document.getElementById('z-fp-bar').style.width = pct + '%';
+}
+
+function renderSkills(ch) {
+  const el = document.getElementById(ch+'-skills');
+  el.innerHTML = SKILL_DATA[ch].map(s => `
+    <div class="skill-row">
+      <div class="skill-dot ${s.prof ? 'dot-prof' : 'dot-none'}"></div>
+      <span class="skill-name">${s.name}</span>
+      <span class="skill-val">${s.val >= 0 ? '+' : ''}${s.val}</span>
+    </div>
+  `).join('');
+}
+
+function renderSaves(ch) {
+  const el = document.getElementById(ch+'-saves');
+  el.innerHTML = SAVE_DATA[ch].map(s => `
+    <div class="save-row">
+      <div class="save-dot ${s.prof ? 'dot-prof' : 'dot-none'}"></div>
+      <span class="skill-name">${s.name}</span>
+      <span class="skill-val">${s.val >= 0 ? '+' : ''}${s.val}</span>
+    </div>
+  `).join('');
+}
+
+function renderEquipment(ch) {
+  const el = document.getElementById(ch+'-eq-list');
+  const eq = state[ch].equipment;
+  el.innerHTML = eq.map((item, i) => `
+    <div class="eq-item">
+      <span class="eq-name">${item.name}</span>
+      <div class="eq-qty-ctrl">
+        <button class="eq-qty-btn" onclick="changeQty('${ch}',${i},-1)">−</button>
+        <span class="eq-qty">${item.qty}</span>
+        <button class="eq-qty-btn" onclick="changeQty('${ch}',${i},1)">+</button>
+      </div>
+      <button class="btn-del" onclick="removeEq('${ch}',${i})" title="Eliminar">×</button>
+    </div>
+  `).join('');
+}
+
+function renderAbilities(ch) {
+  const el = document.getElementById(ch+'-abilities');
+  const abs = state[ch].abilities;
+  el.innerHTML = abs.map((a, i) => `
+    <div class="ability-item">
+      <div class="ability-top">
+        <span class="ability-name">${a.name}</span>
+        <button class="btn-del" onclick="removeAbility('${ch}',${i})">×</button>
+      </div>
+      <div class="ability-desc">${a.desc}</div>
+    </div>
+  `).join('');
+}
+
+function renderAttacksG() {
+  const el = document.getElementById('g-attacks');
+  el.innerHTML = `
+    <div class="atk-roll-banner">
+      <span class="atk-roll-label">🎯 Tirada de Ataque</span>
+      <span class="atk-roll-formula">1d20 + 16</span>
+      <button class="btn-roll btn-roll-g" onclick="rollAtkG()">Lanzar</button>
+      <span class="atk-roll-result" id="g-atk-roll-total">—</span>
+      <span class="atk-roll-breakdown" id="g-atk-roll-bd"></span>
+    </div>
+
+    <div class="attack-card">
+      <div class="attack-name">⚔ Mythlyf</div>
+      <div class="attack-desc">Daga legendaria de hielo</div>
+      <div class="attack-formula">3d6+11 (daño base) + 1d10 (hielo)</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Modo furtivo: +9d6 adicional</div>
+      <div class="attack-controls">
+        <button class="btn-roll btn-roll-g" onclick="rollMythlyf(false)">🎲 Daño</button>
+        <button class="btn-roll btn-roll-g" onclick="rollMythlyf(true)">🗡 Furtivo</button>
+        <button class="btn-roll btn-roll-g" onclick="openEditMythlyf()">⚙ Config</button>
+      </div>
+      <div class="roll-result" id="mythlyf-result"></div>
+    </div>
+
+    <div class="attack-card">
+      <div class="attack-name">⚡ Descarga (Traje)</div>
+      <div class="attack-desc">Daño del traje especial: <code>cargas × 10 + movimiento / 2</code></div>
+      <div class="attack-formula">Movimiento base: 30 pies + 5 pies/carga extra</div>
+      <div class="descarga-controls">
+        <span class="descarga-label">Nº de cargas:</span>
+        <input class="descarga-input" id="descarga-charges" type="number" min="0" max="20" value="3" oninput="updateDescarga()">
+        <span class="descarga-label" id="descarga-movement">Movimiento: 45 pies</span>
+      </div>
+      <div class="attack-formula" id="descarga-formula">3×10 + 45/2 = 30 + 22.5 = 52</div>
+      <div class="attack-controls">
+        <button class="btn-roll btn-roll-g" onclick="rollDescarga()">⚡ Descargar</button>
+      </div>
+      <div class="roll-result" id="descarga-result"></div>
+    </div>
+
+    <div class="attack-card">
+      <div class="attack-name">🔮 Estallido Arcano Gélido</div>
+      <div class="attack-desc">Truco. Nv.17: 4 rayos de 1d10 frío a 120 pies. Ataque: Car+Comp.</div>
+      <div class="attack-formula">4 × 1d10 daño frío</div>
+      <div class="attack-controls">
+        <button class="btn-roll btn-roll-g" onclick="rollEAG()">🎲 Daño</button>
+      </div>
+      <div class="roll-result" id="eag-result"></div>
+    </div>
+  `;
+  updateDescarga();
+}
+
+function renderAttacksZ() {
+  const el = document.getElementById('z-attacks');
+  el.innerHTML = `
+    <div class="atk-roll-banner">
+      <span class="atk-roll-label">🎯 Tirada de Ataque</span>
+      <span class="atk-roll-formula">1d20 + 13</span>
+      <button class="btn-roll btn-roll-z" onclick="rollAtkZ()">Lanzar</button>
+      <span class="atk-roll-result" id="z-atk-roll-total">—</span>
+      <span class="atk-roll-breakdown" id="z-atk-roll-bd"></span>
+    </div>
+
+    <div class="attack-card">
+      <div class="attack-name">🪄 Bastón del Zorro Gris</div>
+      <div class="attack-desc">Arma principal · Staff Master (finura, 1d8/1d10)</div>
+      <div class="attack-formula">1d12 + 9 + 2d8 + 1d10</div>
+      <div class="attack-controls">
+        <button class="btn-roll btn-roll-z" onclick="rollBaston()">🎲 Daño</button>
+      </div>
+      <div class="roll-result" id="z-atk-baston"></div>
+    </div>
+
+    <div class="attack-card">
+      <div class="attack-name">⚔ Espada Corta</div>
+      <div class="attack-formula">1d6+3 · Ataque con finura</div>
+      <div class="attack-controls">
+        <button class="btn-roll btn-roll-z" onclick="rollSimple('1d6+3','Espada Corta','z-atk-sc')">🎲 Daño</button>
+        <button class="btn-roll btn-roll-z" onclick="rollSimple('1d6+3','Espada Corta x2 (doble)','z-atk-sc',2)">x2</button>
+      </div>
+      <div class="roll-result" id="z-atk-sc"></div>
+    </div>
+
+    <div class="attack-card">
+      <div class="attack-name">🗡 Daga</div>
+      <div class="attack-formula">1d4+3 · Una tiene cum</div>
+      <div class="attack-controls">
+        <button class="btn-roll btn-roll-z" onclick="rollSimple('1d4+3','Daga','z-atk-dg')">🎲 Daño</button>
+        <button class="btn-roll btn-roll-z" onclick="rollSimple('1d4+3','Daga x2','z-atk-dg',2)">x2</button>
+      </div>
+      <div class="roll-result" id="z-atk-dg"></div>
+    </div>
+
+    <div class="attack-card">
+      <div class="attack-name">✨ Daga Especial</div>
+      <div class="attack-formula">1d6 + DES (${fmtMod(state.z.stats.dex)})</div>
+      <div class="attack-controls">
+        <button class="btn-roll btn-roll-z" onclick="rollDagaEsp()">🎲 Daño</button>
+      </div>
+      <div class="roll-result" id="z-atk-de"></div>
+    </div>
+  `;
+}
+
+function renderSpells() {
+  const el = document.getElementById('g-spells');
+  const ss = state.g.spellSlots;
+  el.innerHTML = `
+    <div class="spell-level">
+      <div class="spell-level-header"><span class="spell-level-label">Trucos</span></div>
+      <div class="spell-names">
+        ${['Mano de Mago','Mensaje','Toque Gélido'].map(s=>`<span class="spell-tag">${s}</span>`).join('')}
+      </div>
+    </div>
+    ${[1,2,3].map(lvl => {
+      const d = ss[lvl];
+      const slots = Array(d.total).fill(0).map((_,i) =>
+        `<div class="slot ${i < d.total - d.used ? 'avail' : 'used'}" onclick="toggleSlot('g',${lvl},${i})"></div>`
+      ).join('');
+      const spellsForLevel = {
+        1:['Disfrazarse','Sirviente Invisible','Ráfaga de Viento','Nube Brumosa'],
+        2:['Sugestión','Corona de Locura','Fuerza Fantasmal','Imagen Múltiple'],
+        3:['Imagen Mayor','Patrón Hipnótico']
+      };
+      return `
+        <div class="spell-level">
+          <div class="spell-level-header">
+            <span class="spell-level-label">Nivel ${lvl}</span>
+            <div class="spell-slots">${slots}</div>
+            <span style="font-size:11px;color:var(--muted)">${d.used}/${d.total} usados</span>
+            <button class="btn-add" style="font-size:11px;padding:2px 8px" onclick="restoreSlots('g',${lvl})">Reset</button>
+          </div>
+          <div class="spell-names">
+            ${spellsForLevel[lvl].map(s=>`<span class="spell-tag">${s}</span>`).join('')}
+          </div>
+        </div>
+      `;
+    }).join('')}
+  `;
+}
+
+function renderPowers() {
+  const el = document.getElementById('z-powers');
+  const powers = state.z.powers;
+  el.innerHTML = powers.map((p, i) => `
+    <div class="power-card">
+      <div class="power-header" onclick="togglePower(${i})">
+        <span class="power-title">${p.name}</span>
+        ${p.cost > 0 ? `<span class="power-cost">${p.cost} PF</span>` : '<span class="power-cost">0 PF</span>'}
+        <span style="color:var(--muted);font-size:11px;margin-left:6px">${p.time||''}</span>
+        <span id="power-chevron-${i}" style="color:var(--muted);margin-left:8px">▼</span>
+      </div>
+      <div class="power-body" id="power-body-${i}">
+        <div style="margin-bottom:8px">${p.desc}</div>
+        <div class="power-actions">
+          ${p.cost > 0 ? `<button class="btn-cast" onclick="castPower(${i})" id="cast-btn-${i}">Usar (−${p.cost} PF)</button>` : ''}
+          <button class="btn-cast" style="background:var(--panel);color:var(--muted);border-color:var(--border)" onclick="removePower(${i})">Eliminar</button>
+        </div>
+        <div id="power-cast-result-${i}" style="display:none;margin-top:6px;font-size:12px;color:var(--accent-z);"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ===== INTERACTIONS =====
+let currentChar = 'g';
+
+function showChar(ch) {
+  currentChar = ch;
+  document.getElementById('page-g').classList.toggle('active', ch==='g');
+  document.getElementById('page-z').classList.toggle('active', ch==='z');
+  document.getElementById('tab-g').className = 'char-tab ' + (ch==='g' ? 'active-g' : '');
+  document.getElementById('tab-z').className = 'char-tab ' + (ch==='z' ? 'active-z' : '');
+}
+
+function changeHP(ch, type) {
+  const amt = parseInt(document.getElementById(ch+'-hp-amt').value) || 0;
+  const hp = state[ch].hp;
+  if (type === 'heal') hp.current = Math.min(hp.max, hp.current + amt);
+  else hp.current = Math.max(0, hp.current - amt);
+  saveState(); renderHP(ch);
+}
+
+function setTempHP(ch) {
+  const amt = parseInt(document.getElementById(ch+'-temp-amt').value) || 0;
+  state[ch].hp.temp = amt;
+  saveState(); renderHP(ch);
+}
+
+function setMaxHP(ch) {
+  const newMax = prompt('Nuevo máximo de PG:', state[ch].hp.max);
+  if (newMax && !isNaN(newMax)) {
+    state[ch].hp.max = parseInt(newMax);
+    saveState(); renderHP(ch);
+  }
+}
+
+function changeFP(type) {
+  const amt = parseInt(document.getElementById('z-fp-amt').value) || 0;
+  const fp = state.z.fp;
+  if (type === 'restore') fp.current = Math.min(fp.max, fp.current + amt);
+  else fp.current = Math.max(0, fp.current - amt);
+  saveState(); renderFP();
+}
+
+function fullRestFP() {
+  state.z.fp.current = state.z.fp.max;
+  saveState(); renderFP();
+  showNotif('Puntos de Fuerza completamente restaurados.');
+}
+
+function setMaxFP() {
+  const newMax = prompt('Nuevo máximo de Puntos de Fuerza:', state.z.fp.max);
+  if (newMax && !isNaN(newMax)) {
+    state.z.fp.max = parseInt(newMax);
+    saveState(); renderFP();
+  }
+}
+
+function changeQty(ch, i, delta) {
+  const item = state[ch].equipment[i];
+  item.qty = Math.max(0, item.qty + delta);
+  saveState(); renderEquipment(ch);
+}
+
+function removeEq(ch, i) {
+  if (confirm(`¿Eliminar "${state[ch].equipment[i].name}"?`)) {
+    state[ch].equipment.splice(i, 1);
+    saveState(); renderEquipment(ch);
+  }
+}
+
+function removeAbility(ch, i) {
+  state[ch].abilities.splice(i, 1);
+  saveState(); renderAbilities(ch);
+}
+
+function removePower(i) {
+  if (confirm(`¿Eliminar "${state.z.powers[i].name}"?`)) {
+    state.z.powers.splice(i, 1);
+    saveState(); renderPowers();
+  }
+}
+
+// Modal state
+let modalEqChar = 'g';
+let modalAbilChar = 'g';
+
+function openAddEq(ch) {
+  modalEqChar = ch;
+  document.getElementById('eq-name-input').value = '';
+  document.getElementById('eq-qty-input').value = 1;
+  openModal('modal-eq');
+  setTimeout(() => document.getElementById('eq-name-input').focus(), 100);
+}
+
+function confirmAddEq() {
+  const name = document.getElementById('eq-name-input').value.trim();
+  const qty = parseInt(document.getElementById('eq-qty-input').value) || 1;
+  if (!name) return;
+  state[modalEqChar].equipment.push({ name, qty });
+  saveState(); renderEquipment(modalEqChar);
+  closeModal('modal-eq');
+}
+
+function openAddAbility(ch) {
+  modalAbilChar = ch;
+  document.getElementById('ability-name-input').value = '';
+  document.getElementById('ability-desc-input').value = '';
+  openModal('modal-ability');
+  setTimeout(() => document.getElementById('ability-name-input').focus(), 100);
+}
+
+function confirmAddAbility() {
+  const name = document.getElementById('ability-name-input').value.trim();
+  const desc = document.getElementById('ability-desc-input').value.trim();
+  if (!name) return;
+  state[modalAbilChar].abilities.push({ name, desc });
+  saveState(); renderAbilities(modalAbilChar);
+  closeModal('modal-ability');
+}
+
+function openAddPower() {
+  document.getElementById('power-name-input').value = '';
+  document.getElementById('power-cost-input').value = 0;
+  document.getElementById('power-time-input').value = '';
+  document.getElementById('power-desc-input').value = '';
+  openModal('modal-power');
+}
+
+function confirmAddPower() {
+  const name = document.getElementById('power-name-input').value.trim();
+  const cost = parseInt(document.getElementById('power-cost-input').value) || 0;
+  const time = document.getElementById('power-time-input').value.trim();
+  const desc = document.getElementById('power-desc-input').value.trim();
+  if (!name) return;
+  state.z.powers.push({ name, cost, time, desc });
+  saveState(); renderPowers();
+  closeModal('modal-power');
+}
+
+let editStatChar = '', editStatKey = '';
+function editStat(ch, key) {
+  editStatChar = ch; editStatKey = key;
+  document.getElementById('modal-stat-title').textContent = `Editar ${STAT_LABELS[key]}`;
+  document.getElementById('modal-stat-val').value = state[ch].stats[key];
+  openModal('modal-stat');
+  setTimeout(() => document.getElementById('modal-stat-val').select(), 100);
+}
+function confirmEditStat() {
+  const val = parseInt(document.getElementById('modal-stat-val').value);
+  if (!isNaN(val) && val >= 1 && val <= 30) {
+    state[editStatChar].stats[editStatKey] = val;
+    saveState();
+    renderStats(editStatChar);
+    if (editStatChar === 'z') renderAttacksZ();
+  }
+  closeModal('modal-stat');
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function togglePower(i) {
+  const body = document.getElementById(`power-body-${i}`);
+  const chev = document.getElementById(`power-chevron-${i}`);
+  const open = body.classList.toggle('open');
+  chev.textContent = open ? '▲' : '▼';
+}
+
+function castPower(i) {
+  const p = state.z.powers[i];
+  const fp = state.z.fp;
+  if (fp.current < p.cost) {
+    const r = document.getElementById(`power-cast-result-${i}`);
+    r.style.display = 'block';
+    r.style.color = 'var(--red)';
+    r.textContent = `❌ Sin PF suficientes (necesitas ${p.cost}, tienes ${fp.current})`;
+    return;
+  }
+  fp.current -= p.cost;
+  saveState(); renderFP();
+  const r = document.getElementById(`power-cast-result-${i}`);
+  r.style.display = 'block';
+  r.style.color = 'var(--accent-z)';
+  r.textContent = `✓ Poder usado. −${p.cost} PF → quedan ${fp.current}/${fp.max}`;
+}
+
+function toggleSlot(ch, lvl, i) {
+  const ss = state[ch].spellSlots[lvl];
+  const used = ss.used;
+  const avail = ss.total - used;
+  const slotIdx = i; // 0 = first slot
+  if (slotIdx < avail) { // clicking available → use it
+    ss.used = Math.min(ss.total, ss.used + 1);
+  } else { // clicking used → restore it
+    ss.used = Math.max(0, ss.used - 1);
+  }
+  saveState(); renderSpells();
+}
+
+function restoreSlots(ch, lvl) {
+  state[ch].spellSlots[lvl].used = 0;
+  saveState(); renderSpells();
+}
+
+// ===== DICE =====
+function rollDie(sides) { return Math.floor(Math.random() * sides) + 1; }
+
+function parseDice(str) {
+  // Returns {total, breakdown}
+  str = str.trim().toLowerCase().replace(/\s/g,'');
+  let total = 0, parts = [];
+  const regex = /([+-]?\d*d\d+|[+-]?\d+)/g;
+  let m;
+  while ((m = regex.exec(str)) !== null) {
+    const part = m[0];
+    if (part.includes('d')) {
+      const sign = part.startsWith('-') ? -1 : 1;
+      const clean = part.replace(/^[+-]/,'');
+      const [nStr, dStr] = clean.split('d');
+      const n = parseInt(nStr) || 1;
+      const d = parseInt(dStr);
+      const rolls = [];
+      for (let i = 0; i < n; i++) rolls.push(rollDie(d));
+      const sum = rolls.reduce((a,b)=>a+b,0) * sign;
+      total += sum;
+      parts.push(`${sign<0?'-':''}${n}d${d}[${rolls.join(',')}]=${sum}`);
+    } else {
+      const v = parseInt(part);
+      total += v;
+      parts.push(v >= 0 ? `+${v}` : `${v}`);
+    }
+  }
+  return { total, breakdown: parts.join(' ') };
+}
+
+function showRollResult(elId, label, total, breakdown) {
+  const el = document.getElementById(elId);
+  el.innerHTML = `<div style="font-size:11px;color:var(--muted);margin-bottom:3px">${label}</div>
+    <div class="roll-total">${total}</div>
+    <div class="roll-breakdown">${breakdown}</div>`;
+  el.classList.add('show');
+}
+
+let mythlfConfig = { baseDmg:'3d6+11', iceDmg:'1d10', stealthDice:'9d6' };
+
+function rollMythlyf(stealth) {
+  const base = parseDice(mythlfConfig.baseDmg);
+  const ice = parseDice(mythlfConfig.iceDmg);
+  let total = base.total + ice.total;
+  let breakdown = `Base: ${mythlfConfig.baseDmg} → ${base.breakdown} | Hielo: ${mythlfConfig.iceDmg} → ${ice.breakdown}`;
+  if (stealth) {
+    const s = parseDice(mythlfConfig.stealthDice);
+    total += s.total;
+    breakdown += ` | Furtivo: ${mythlfConfig.stealthDice} → ${s.breakdown}`;
+  }
+  showRollResult('mythlyf-result', stealth ? 'Mythlyf (Furtivo)' : 'Mythlyf', total, breakdown);
+}
+
+function openEditMythlyf() {
+  const base = prompt('Daño base (ej: 3d6+11):', mythlfConfig.baseDmg);
+  if (base) mythlfConfig.baseDmg = base.trim();
+  const ice = prompt('Daño hielo (ej: 1d10):', mythlfConfig.iceDmg);
+  if (ice) mythlfConfig.iceDmg = ice.trim();
+  const stl = prompt('Dados extra furtivo (ej: 9d6):', mythlfConfig.stealthDice);
+  if (stl) mythlfConfig.stealthDice = stl.trim();
+  renderAttacksG();
+}
+
+function updateDescarga() {
+  const charges = parseInt(document.getElementById('descarga-charges').value) || 0;
+  const movement = 30 + charges * 5;
+  const dmg = charges * 10 + Math.floor(movement / 2);
+  document.getElementById('descarga-movement').textContent = `Movimiento: ${movement} pies`;
+  document.getElementById('descarga-formula').textContent =
+    `${charges}×10 + ${movement}/2 = ${charges*10} + ${Math.floor(movement/2)} = ${dmg}`;
+}
+
+function rollDescarga() {
+  const charges = parseInt(document.getElementById('descarga-charges').value) || 0;
+  const movement = 30 + charges * 5;
+  const dmg = charges * 10 + Math.floor(movement / 2);
+  showRollResult('descarga-result', `Descarga (${charges} cargas, ${movement} pies mov)`,
+    dmg, `${charges}×10 + floor(${movement}/2) = ${charges*10} + ${Math.floor(movement/2)}`);
+}
+
+function rollEAG() {
+  const rays = [parseDice('1d10'),parseDice('1d10'),parseDice('1d10'),parseDice('1d10')];
+  const total = rays.reduce((a,r)=>a+r.total,0);
+  const bd = rays.map((r,i)=>`Rayo ${i+1}: ${r.breakdown}`).join(' | ');
+  showRollResult('eag-result', 'Estallido Arcano Gélido (4 rayos)', total, bd);
+}
+
+function rollSimple(formula, name, elId, times=1) {
+  let total = 0, parts = [];
+  for(let i=0;i<times;i++){
+    const r = parseDice(formula);
+    total += r.total;
+    parts.push(r.breakdown);
+  }
+  showRollResult(elId, name, total, parts.join(' + '));
+}
+
+function rollAtkG() {
+  const r = parseDice('1d20');
+  const total = r.total + 16;
+  document.getElementById('g-atk-roll-total').textContent = total;
+  document.getElementById('g-atk-roll-bd').textContent = `d20[${r.total}] +16`;
+  const el = document.getElementById('g-atk-roll-total');
+  el.style.color = r.total === 20 ? 'var(--green)' : r.total === 1 ? 'var(--red)' : 'var(--white)';
+}
+
+function rollAtkZ() {
+  const r = parseDice('1d20');
+  const total = r.total + 13;
+  document.getElementById('z-atk-roll-total').textContent = total;
+  document.getElementById('z-atk-roll-bd').textContent = `d20[${r.total}] +13`;
+  const el = document.getElementById('z-atk-roll-total');
+  el.style.color = r.total === 20 ? 'var(--green)' : r.total === 1 ? 'var(--red)' : 'var(--white)';
+}
+
+function rollBaston() {
+  const d12 = parseDice('1d12');
+  const d8x2 = parseDice('2d8');
+  const d10 = parseDice('1d10');
+  const total = d12.total + 9 + d8x2.total + d10.total;
+  showRollResult('z-atk-baston', 'Bastón del Zorro Gris', total,
+    `1d12[${d12.breakdown}] + 9 + 2d8[${d8x2.breakdown}] + 1d10[${d10.breakdown}]`);
+}
+
+function rollDagaEsp() {
+  const desMod = mod(state.z.stats.dex);
+  const r = parseDice('1d6');
+  const total = r.total + desMod;
+  showRollResult('z-atk-de', 'Daga Especial', total, `1d6[${r.breakdown}] + DES(${desMod>=0?'+':''}${desMod})`);
+}
+
+// Quick dice tray
+function rollQuick(sides) {
+  const result = rollDie(sides);
+  const el = document.getElementById('dice-result');
+  el.innerHTML = `<span style="color:var(--gold);font-size:18px;font-weight:700">d${sides}: ${result}</span>`;
+}
+
+function rollCustom() {
+  const expr = document.getElementById('custom-dice').value.trim();
+  if (!expr) return;
+  try {
+    const r = parseDice(expr);
+    document.getElementById('dice-result').innerHTML =
+      `<div><span style="color:var(--gold);font-size:18px;font-weight:700">${r.total}</span></div>
+       <div style="font-size:11px;color:var(--muted);margin-top:2px">${r.breakdown}</div>`;
+  } catch(e) {
+    document.getElementById('dice-result').innerHTML = `<span style="color:var(--red)">Expresión inválida</span>`;
+  }
+}
+
+function showNotif(msg) {
+  const n = document.createElement('div');
+  n.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:8px;z-index:9999;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.5)';
+  n.textContent = msg;
+  document.body.appendChild(n);
+  setTimeout(()=>n.remove(), 2500);
+}
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if(e.target===el) el.classList.remove('open'); });
+});
+
+// Enter key for modal inputs
+document.getElementById('eq-name-input').addEventListener('keydown', e => { if(e.key==='Enter') confirmAddEq(); });
+document.getElementById('modal-stat-val').addEventListener('keydown', e => { if(e.key==='Enter') confirmEditStat(); });
+
+// ===== INIT =====
+loadState();
+renderAll();
+updateDescarga();
+</script>
+</body>
+</html>
