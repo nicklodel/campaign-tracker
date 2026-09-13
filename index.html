@@ -117,6 +117,9 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-
 .attack-desc { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
 .attack-formula { font-size: 12px; color: var(--gold); font-family: monospace; margin-bottom: 8px; }
 .attack-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.atk-opt { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); cursor: pointer; user-select: none; margin-left: 4px; }
+.atk-opt input { accent-color: var(--gold); cursor: pointer; }
+.attack-formula .off { text-decoration: line-through; opacity: .45; }
 .roll-result { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; margin-top: 8px; font-size: 13px; display: none; }
 .roll-result.show { display: block; }
 .roll-total { font-size: 20px; font-weight: 700; color: var(--gold); }
@@ -782,12 +785,13 @@ function renderAttacksG() {
     <div class="attack-card">
       <div class="attack-name">⚔ Mythlyf</div>
       <div class="attack-desc">Daga legendaria de hielo</div>
-      <div class="attack-formula">3d6+11 (daño base) + 1d10 (hielo)</div>
+      <div class="attack-formula" id="g-mythlyf-formula"></div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Modo furtivo: +9d6 adicional</div>
       <div class="attack-controls">
         <button class="btn-roll btn-roll-g" onclick="rollMythlyf(false)">🎲 Daño</button>
         <button class="btn-roll btn-roll-g" onclick="rollMythlyf(true)">🗡 Furtivo</button>
         <button class="btn-roll btn-roll-g" onclick="openEditMythlyf()">⚙ Config</button>
+        <label class="atk-opt"><input type="checkbox" id="g-mythlyf-ice" ${iceOn('g') ? 'checked' : ''} onchange="toggleOptDie('g', 'mythlyfIce', this.checked)"> +1d10 hielo</label>
       </div>
       <div class="roll-result" id="mythlyf-result"></div>
     </div>
@@ -819,6 +823,7 @@ function renderAttacksG() {
     </div>
   `;
   updateDescarga();
+  updateMythlyfFormula();
 }
 
 function renderAttacksZ() {
@@ -835,9 +840,10 @@ function renderAttacksZ() {
     <div class="attack-card">
       <div class="attack-name">🪄 Bastón del Zorro Gris</div>
       <div class="attack-desc">Arma principal · Staff Master (finura, 1d8/1d10)</div>
-      <div class="attack-formula">1d12 + 9 + 2d8 + 1d10</div>
+      <div class="attack-formula" id="z-baston-formula"></div>
       <div class="attack-controls">
         <button class="btn-roll btn-roll-z" onclick="rollBaston()">🎲 Daño</button>
+        <label class="atk-opt"><input type="checkbox" id="z-baston-d10" ${iceOn('z') ? 'checked' : ''} onchange="toggleOptDie('z', 'bastonD10', this.checked)"> +1d10</label>
       </div>
       <div class="roll-result" id="z-atk-baston"></div>
     </div>
@@ -871,6 +877,7 @@ function renderAttacksZ() {
       <div class="roll-result" id="z-atk-de"></div>
     </div>
   `;
+  updateBastonFormula();
 }
 
 function renderSpells() {
@@ -1176,11 +1183,31 @@ function showRollResult(elId, label, total, breakdown) {
 
 let mythlfConfig = { baseDmg:'3d6+11', iceDmg:'1d10', stealthDice:'9d6' };
 
+// Optional dice toggles (persisted in state; missing key = enabled)
+function iceOn(c) { return c === 'g' ? state.g.mythlyfIce !== false : state.z.bastonD10 !== false; }
+function toggleOptDie(c, key, on) {
+  state[c][key] = on;
+  saveState();
+  if (c === 'g') updateMythlyfFormula(); else updateBastonFormula();
+}
+function updateMythlyfFormula() {
+  const el = document.getElementById('g-mythlyf-formula');
+  if (el) el.innerHTML = `${mythlfConfig.baseDmg} (daño base) + <span class="${iceOn('g') ? '' : 'off'}">${mythlfConfig.iceDmg} (hielo)</span>`;
+}
+function updateBastonFormula() {
+  const el = document.getElementById('z-baston-formula');
+  if (el) el.innerHTML = `1d12 + 9 + 2d8 + <span class="${iceOn('z') ? '' : 'off'}">1d10</span>`;
+}
+
 function rollMythlyf(stealth) {
   const base = parseDice(mythlfConfig.baseDmg);
-  const ice = parseDice(mythlfConfig.iceDmg);
-  let total = base.total + ice.total;
-  let breakdown = `Base: ${mythlfConfig.baseDmg} → ${base.breakdown} | Hielo: ${mythlfConfig.iceDmg} → ${ice.breakdown}`;
+  let total = base.total;
+  let breakdown = `Base: ${mythlfConfig.baseDmg} → ${base.breakdown}`;
+  if (iceOn('g')) {
+    const ice = parseDice(mythlfConfig.iceDmg);
+    total += ice.total;
+    breakdown += ` | Hielo: ${mythlfConfig.iceDmg} → ${ice.breakdown}`;
+  }
   if (stealth) {
     const s = parseDice(mythlfConfig.stealthDice);
     total += s.total;
@@ -1254,10 +1281,14 @@ function rollAtkZ() {
 function rollBaston() {
   const d12 = parseDice('1d12');
   const d8x2 = parseDice('2d8');
-  const d10 = parseDice('1d10');
-  const total = d12.total + 9 + d8x2.total + d10.total;
-  showRollResult('z-atk-baston', 'Bastón del Zorro Gris', total,
-    `1d12[${d12.breakdown}] + 9 + 2d8[${d8x2.breakdown}] + 1d10[${d10.breakdown}]`);
+  let total = d12.total + 9 + d8x2.total;
+  let breakdown = `1d12[${d12.breakdown}] + 9 + 2d8[${d8x2.breakdown}]`;
+  if (iceOn('z')) {
+    const d10 = parseDice('1d10');
+    total += d10.total;
+    breakdown += ` + 1d10[${d10.breakdown}]`;
+  }
+  showRollResult('z-atk-baston', 'Bastón del Zorro Gris', total, breakdown);
 }
 
 function rollDagaEsp() {
