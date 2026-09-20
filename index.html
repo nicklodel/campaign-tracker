@@ -93,6 +93,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-
 .btn-roll-g:hover { background: #254a3d; }
 .btn-roll-z { background: #2a1a4a; color: var(--accent-z); border: 1px solid var(--accent-z); }
 .btn-roll-z:hover { background: #35255e; }
+.btn-icon { padding: 5px 8px; font-size: 13px; }
 .btn-cast { padding: 4px 10px; border-radius: 5px; font-size: 11px; font-weight: 700; background: #2a1a4a; color: var(--accent-z); border: 1px solid var(--accent-z); cursor: pointer; transition: all .15s; }
 .btn-cast:hover { background: #35255e; }
 .btn-cast:disabled { opacity: .4; cursor: not-allowed; }
@@ -139,6 +140,13 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-
 .atk-opt { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); cursor: pointer; user-select: none; margin-left: 4px; }
 .atk-opt input { accent-color: var(--gold); cursor: pointer; }
 .attack-formula .off { text-decoration: line-through; opacity: .45; }
+.atk-crit { color: var(--green); font-weight: 700; font-size: 12px; }
+.rules { margin-top: 8px; font-size: 12px; color: var(--muted); }
+.rules summary { cursor: pointer; color: var(--gold); font-size: 12px; letter-spacing: .5px; user-select: none; }
+.rules ul { margin: 6px 0 0 16px; padding: 0; line-height: 1.45; }
+.rules li { margin-bottom: 4px; }
+.rules b { color: var(--text); }
+.rules .warn { color: var(--red); }
 .roll-result { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; margin-top: 8px; font-size: 13px; display: none; }
 .roll-result.show { display: block; }
 .roll-total { font-size: 20px; font-weight: 700; color: var(--gold); }
@@ -899,24 +907,41 @@ function renderAttacksG() {
   el.innerHTML = `
     <div class="atk-roll-banner">
       <span class="atk-roll-label">🎯 Tirada de Ataque</span>
-      <span class="atk-roll-formula">1d20 + 16</span>
+      <span class="atk-roll-formula" id="g-atk-formula" title="DES + competencia + Mithlith legendario"></span>
       <button class="btn-roll btn-roll-g" onclick="rollAtkG()">Lanzar</button>
       <span class="atk-roll-result" id="g-atk-roll-total">—</span>
       <span class="atk-roll-breakdown" id="g-atk-roll-bd"></span>
+      <label class="atk-opt"><input type="checkbox" id="g-mith-stealth"> desde sigilo (crít. 15+)</label>
     </div>
 
     <div class="attack-card">
-      <div class="attack-name">⚔ Mythlyf</div>
-      <div class="attack-desc">Daga legendaria de hielo</div>
+      <div class="attack-name">🗡 Mithlith · «La Envidiosa»</div>
+      <div class="attack-desc">Daga legendaria élfica · mágica · +5 legendario al ataque y al daño</div>
       <div class="attack-formula" id="g-mythlyf-formula"></div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Modo furtivo: +9d6 adicional</div>
       <div class="attack-controls">
-        <button class="btn-roll btn-roll-g" onclick="rollMythlyf(false)">🎲 Daño</button>
-        <button class="btn-roll btn-roll-g" onclick="rollMythlyf(true)">🗡 Furtivo</button>
-        <button class="btn-roll btn-roll-g" onclick="openEditMythlyf()">⚙ Config</button>
-        <label class="atk-opt"><input type="checkbox" id="g-mythlyf-ice" ${iceOn('g') ? 'checked' : ''} onchange="toggleOptDie('g', 'mythlyfIce', this.checked)"> +1d10 hielo</label>
+        <button class="btn-roll btn-roll-g" onclick="rollMythlyf({})" title="3d6 + 5 + DES">🎲 Daño</button>
+        <button class="btn-roll btn-roll-g" onclick="rollMythlyf({sneak:true})" title="+ dados de ataque furtivo">🗡 Furtivo</button>
+        <button class="btn-roll btn-roll-g" onclick="rollMythlyf({crit:true, sneak:document.getElementById('g-mith-stealth').checked})" title="Todos los dados x2">💥 Crítico</button>
+        <button class="btn-roll btn-roll-g" onclick="rollMythlyf({crit:true, sneak:true, ambush:true})" title="Fuera de combate desde ocultación: crítico automático y furtivo duplicado">🌑 Emboscada</button>
+        <button class="btn-roll btn-roll-g btn-icon" onclick="rollMithMiss()" title="Fallo · Filo inmisericorde: daño cortante = mod. DES">✂</button>
+        <button class="btn-roll btn-roll-g btn-icon" onclick="openEditMythlyf()" title="Configurar dados de hielo y furtivo">⚙</button>
+        <label class="atk-opt"><input type="checkbox" id="g-mythlyf-ice" ${iceOn('g') ? 'checked' : ''} onchange="toggleOptDie('g', 'mythlyfIce', this.checked)"> +${mithCfg().ice} hielo</label>
       </div>
       <div class="roll-result" id="mythlyf-result"></div>
+      <details class="rules">
+        <summary>📜 Reglas de Mithlith</summary>
+        <ul>
+          <li class="warn"><b>Mith:</b> debe empuñarse con una sola mano, con la otra <b>totalmente vacía</b>, y <b>nunca arrojarse</b>. Si se rompe la regla: 0 de daño, sin habilidades y <b>45 de daño psíquico</b> al portador por turno.</li>
+          <li><b>«La puñalada por la espalda definitiva»:</b> desde ocultación exitosa <b>fuera de combate</b>, el ataque es crítico automático y duplica el daño furtivo (botón <i>Emboscada</i>). <b>En combate</b>, atacar desde sigilo es crítico con 15+ (casilla <i>desde sigilo</i>).</li>
+          <li><b>«Nunca confíes en una cara bonita, cariño»:</b> si un enemigo puede atacarte y elige atacar a otro o hacer otra cosa que no te dañe, puedes usar tu <b>reacción</b> para atacarle <b>con ventaja</b>.</li>
+          <li><b>«Filo inmisericorde»:</b> un ataque fallido sigue causando daño cortante igual al mod. de DES (botón <i>Fallo</i>).</li>
+          <li><b>«Deseo lo que es tuyo»:</b> acertar a un enemigo con más DES que tú te roba <b>+1 DES permanente</b> (mientras él siga teniendo más; en igualdad deja de hacerlo). Edita DES en Estadísticas y el daño se recalcula.</li>
+          <li><b>«Las mentiras tienen las patas cortas»:</b> acertar a un doppelganger u otro cambiaformas lo revierte a su forma real.</li>
+          <li><b>«Era todo una ilusión»:</b> 1 vez por descanso largo puedes lanzar <b>Proyectar Imagen</b> como conjuro de nivel 7 desde la daga.
+            <label class="atk-opt"><input type="checkbox" id="g-mith-illusion" ${state.g.mithIllusionUsed ? 'checked' : ''} onchange="state.g.mithIllusionUsed = this.checked; saveState()"> usado</label></li>
+          <li><b>Estado:</b> ¿Bueno? · <b>Categoría:</b> daga · daño cortante o perforante.</li>
+        </ul>
+      </details>
     </div>
 
     <div class="attack-card">
@@ -947,6 +972,7 @@ function renderAttacksG() {
   `;
   updateDescarga();
   updateMythlyfFormula();
+  updateMithAttackFormula();
 }
 
 function renderAttacksZ() {
@@ -1239,7 +1265,7 @@ function confirmEditStat() {
       renderCombat(editStatChar);
       renderSkills(editStatChar);
       renderSaves(editStatChar);
-      if (editStatChar === 'z') renderAttacksZ();
+      if (editStatChar === 'z') renderAttacksZ(); else renderAttacksG();
     }
   }
   closeModal('modal-stat');
@@ -1330,7 +1356,15 @@ function showRollResult(elId, label, total, breakdown) {
   el.classList.add('show');
 }
 
-let mythlfConfig = { baseDmg:'3d6+11', iceDmg:'1d10', stealthDice:'9d6' };
+// ===== MITHLITH (Garison's legendary dagger) =====
+// Damage: 3d6 + 5 (legendary enchantment) + DES. Ice/sneak dice are configurable and persisted.
+const MITH_LEGENDARY = 5;
+function mithCfg() {
+  if (!state.g.mithlith) state.g.mithlith = { ice: '1d10', sneak: '9d6' };
+  return state.g.mithlith;
+}
+function mithBase() { return `3d6+${MITH_LEGENDARY + mod(state.g.stats.dex)}`; }
+function mithAtkBonus() { return mod(state.g.stats.dex) + PROF_BONUS.g + MITH_LEGENDARY; }
 
 // Optional dice toggles (persisted in state; missing key = enabled)
 function iceOn(c) { return c === 'g' ? state.g.mythlyfIce !== false : state.z.bastonD10 !== false; }
@@ -1341,37 +1375,60 @@ function toggleOptDie(c, key, on) {
 }
 function updateMythlyfFormula() {
   const el = document.getElementById('g-mythlyf-formula');
-  if (el) el.innerHTML = `${mythlfConfig.baseDmg} (daño base) + <span class="${iceOn('g') ? '' : 'off'}">${mythlfConfig.iceDmg} (hielo)</span>`;
+  if (!el) return;
+  const dex = mod(state.g.stats.dex);
+  el.innerHTML = `3d6 + ${MITH_LEGENDARY} (legendario) + DES(${fmtBonus(dex)}) = <b>${mithBase()}</b> + <span class="${iceOn('g') ? '' : 'off'}">${mithCfg().ice} (hielo)</span> · Furtivo: +${mithCfg().sneak}`;
+}
+function updateMithAttackFormula() {
+  const el = document.getElementById('g-atk-formula');
+  if (el) el.textContent = `1d20 + ${mithAtkBonus()}`;
 }
 function updateBastonFormula() {
   const el = document.getElementById('z-baston-formula');
   if (el) el.innerHTML = `1d12 + 9 + 2d8 + <span class="${iceOn('z') ? '' : 'off'}">1d10</span>`;
 }
 
-function rollMythlyf(stealth) {
-  const base = parseDice(mythlfConfig.baseDmg);
-  let total = base.total;
-  let breakdown = `Base: ${mythlfConfig.baseDmg} → ${base.breakdown}`;
-  if (iceOn('g')) {
-    const ice = parseDice(mythlfConfig.iceDmg);
-    total += ice.total;
-    breakdown += ` | Hielo: ${mythlfConfig.iceDmg} → ${ice.breakdown}`;
+// Doubles every die in a formula (crit), leaving flat modifiers untouched.
+function doubleDice(formula) {
+  return formula.replace(/(\d*)d(\d+)/g, (m, n, d) => `${(parseInt(n) || 1) * 2}d${d}`);
+}
+
+function rollMythlyf(opts = {}) {
+  const { crit = false, sneak = false, ambush = false } = opts;
+  const cfg = mithCfg();
+  const dice = f => crit ? doubleDice(f) : f;
+  const parts = [];
+  let total = 0;
+  const add = (label, formula) => {
+    const r = parseDice(formula);
+    total += r.total;
+    parts.push(`${label}: ${formula} → ${r.breakdown}`);
+  };
+  add('Base', dice(mithBase()));
+  if (iceOn('g')) add('Hielo', dice(cfg.ice));
+  if (sneak) {
+    // Ambush: automatic crit (dice x2) AND sneak attack doubled on top of that
+    add(ambush ? 'Furtivo x2' : 'Furtivo', dice(ambush ? doubleDice(cfg.sneak) : cfg.sneak));
   }
-  if (stealth) {
-    const s = parseDice(mythlfConfig.stealthDice);
-    total += s.total;
-    breakdown += ` | Furtivo: ${mythlfConfig.stealthDice} → ${s.breakdown}`;
-  }
-  showRollResult('mythlyf-result', stealth ? 'Mythlyf (Furtivo)' : 'Mythlyf', total, breakdown);
+  const label = ambush ? 'Mithlith · Emboscada (crít. + furtivo x2)'
+    : crit && sneak ? 'Mithlith · Crítico furtivo'
+    : crit ? 'Mithlith · Crítico'
+    : sneak ? 'Mithlith · Furtivo' : 'Mithlith';
+  showRollResult('mythlyf-result', label, total, parts.join(' | '));
+}
+
+function rollMithMiss() {
+  const dmg = mod(state.g.stats.dex);
+  showRollResult('mythlyf-result', 'Mithlith · Filo inmisericorde (fallo)', dmg, `Daño cortante = mod. DES (${fmtBonus(dmg)})`);
 }
 
 function openEditMythlyf() {
-  const base = prompt('Daño base (ej: 3d6+11):', mythlfConfig.baseDmg);
-  if (base) mythlfConfig.baseDmg = base.trim();
-  const ice = prompt('Daño hielo (ej: 1d10):', mythlfConfig.iceDmg);
-  if (ice) mythlfConfig.iceDmg = ice.trim();
-  const stl = prompt('Dados extra furtivo (ej: 9d6):', mythlfConfig.stealthDice);
-  if (stl) mythlfConfig.stealthDice = stl.trim();
+  const cfg = mithCfg();
+  const ice = prompt('Daño hielo (ej: 1d10):', cfg.ice);
+  if (ice) cfg.ice = ice.trim();
+  const stl = prompt('Dados de ataque furtivo (ej: 9d6):', cfg.sneak);
+  if (stl) cfg.sneak = stl.trim();
+  saveState();
   renderAttacksG();
 }
 
@@ -1417,11 +1474,14 @@ function rollSimple(formula, name, elId, times=1) {
 
 function rollAtkG() {
   const r = parseDice('1d20');
-  const total = r.total + 16;
-  document.getElementById('g-atk-roll-total').textContent = total;
-  document.getElementById('g-atk-roll-bd').textContent = `d20[${r.total}] +16`;
+  const stealth = document.getElementById('g-mith-stealth').checked;
+  const isCrit = r.total >= (stealth ? 15 : 20);
+  const total = r.total + mithAtkBonus();
   const el = document.getElementById('g-atk-roll-total');
-  el.style.color = r.total === 20 ? 'var(--green)' : r.total === 1 ? 'var(--red)' : 'var(--white)';
+  el.textContent = total;
+  el.style.color = isCrit ? 'var(--green)' : r.total === 1 ? 'var(--red)' : 'var(--white)';
+  document.getElementById('g-atk-roll-bd').innerHTML = `d20[${r.total}] +${mithAtkBonus()}` +
+    (isCrit ? ` <span class="atk-crit">¡CRÍTICO${stealth ? ' (sigilo)' : ''}!</span>` : r.total === 1 ? ' <span style="color:var(--red)">pifia</span>' : '');
 }
 
 function rollAtkZ() {
