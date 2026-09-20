@@ -28,6 +28,17 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-
 .char-tab:hover { color: var(--text); }
 .char-tab.active-g { color: var(--accent-g); border-bottom-color: var(--accent-g); }
 .char-tab.active-z { color: var(--accent-z); border-bottom-color: var(--accent-z); }
+.sub-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+.sub-tab { flex: 1; background: var(--panel); border: 1px solid var(--border); color: var(--muted); border-radius: 8px; padding: 9px 12px; font-size: 13px; font-weight: 600; letter-spacing: .5px; cursor: pointer; transition: all .2s; }
+.sub-tab:hover { color: var(--text); }
+.page-g .sub-tab.active { color: var(--accent-g); border-color: var(--accent-g); background: var(--panel2); }
+.page-z .sub-tab.active { color: var(--accent-z); border-color: var(--accent-z); background: var(--panel2); }
+.grid3[data-view='stats'] .panel:not([data-sec='stats']),
+.grid3[data-view='eq'] .panel:not([data-sec='eq']),
+.grid3[data-view='abil'] .panel:not([data-sec='abil']) { display: none; }
+.grid3[data-view='eq'] .panel, .grid3[data-view='abil'] .panel { grid-column: 1 / -1; }
+.grid3[data-view='eq'] .eq-list { max-height: none; }
+@media (max-width: 480px) { .sub-tab { padding: 8px 4px; font-size: 12px; } }
 .backup-bar { display: flex; align-items: center; gap: 6px; padding: 0 10px; }
 .backup-btn { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 5px 9px; font-size: 12px; cursor: pointer; white-space: nowrap; }
 .backup-btn:hover { color: var(--text); border-color: var(--muted); }
@@ -89,6 +100,9 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-
 /* COMBAT STATS */
 .combat-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .combat-box { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 10px; text-align: center; }
+.combat-box.editable { cursor: pointer; transition: border-color .2s; position: relative; min-width: 0; }
+.combat-box.editable::after { content: '✎'; position: absolute; top: 4px; right: 6px; font-size: 10px; color: var(--muted); opacity: .6; }
+.combat-box.editable:hover { border-color: var(--gold); }
 .combat-val { font-size: 24px; font-weight: 700; color: var(--white); }
 .combat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
 
@@ -98,6 +112,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-
 .skill-row:hover { background: var(--panel2); }
 .skill-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .dot-prof { background: var(--gold); }
+.dot-exp { background: var(--gold); box-shadow: 0 0 0 2px var(--panel), 0 0 0 3px var(--gold); }
 .dot-none { background: var(--border); }
 .skill-name { color: var(--muted); font-size: 12px; flex: 1; }
 .skill-val { font-weight: 600; font-size: 12px; color: var(--text); }
@@ -202,6 +217,11 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-
 
 /* SECTION LAYOUT */
 .section-title { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+.finder { width: 100%; box-sizing: border-box; background: var(--panel2); border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: 6px; font-size: 13px; margin-bottom: 8px; }
+.finder:focus { outline: none; border-color: var(--gold); }
+.finder::placeholder { color: var(--muted); }
+.finder-empty { font-size: 12px; color: var(--muted); padding: 6px 2px; font-style: italic; }
+mark.hit { background: rgba(212,175,55,.35); color: inherit; border-radius: 2px; padding: 0 1px; }
 
 /* ATTACK ROLL BANNER */
 .atk-roll-banner { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -251,34 +271,40 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-
 </div>
 
 <!-- GARISON PAGE -->
-<div class="char-page active" id="page-g">
+<div class="char-page page-g active" id="page-g">
   <div class="char-header panel-g" style="border-radius:10px;border:1px solid var(--border);">
     <div>
       <div class="char-name" style="color:var(--accent-g)">Garison</div>
       <div class="char-info">Pícaro Nv. 17 · Humano-Mariquita · Caótico Maligno</div>
       <div class="char-meta">
         <span class="meta-pill">XP: 226.140</span>
-        <span class="meta-pill">Pasiva: 16</span>
+        <span class="meta-pill">Pasiva: <span id="g-passive"></span></span>
         <span class="meta-pill">17d8 HD</span>
         <span class="meta-pill">Prof: +6</span>
       </div>
     </div>
   </div>
 
-  <div class="grid3">
+  <div class="sub-tabs">
+    <button class="sub-tab active" id="g-sub-stats" onclick="showView('g','stats')">📊 Estadísticas</button>
+    <button class="sub-tab" id="g-sub-eq" onclick="showView('g','eq')">🎒 Equipamiento</button>
+    <button class="sub-tab" id="g-sub-abil" onclick="showView('g','abil')">✨ Habilidades</button>
+  </div>
+
+  <div class="grid3" id="g-grid" data-view="stats">
     <!-- STATS -->
-    <div class="panel panel-g">
+    <div data-sec="stats" class="panel panel-g">
       <div class="section-title">Estadísticas</div>
       <div class="stats-grid" id="g-stats"></div>
     </div>
 
     <!-- HP + COMBAT -->
-    <div class="panel panel-g">
+    <div data-sec="stats" class="panel panel-g">
       <div class="section-title">Combate</div>
       <div class="combat-stats" style="margin-bottom:10px">
-        <div class="combat-box"><div class="combat-val" id="g-ac">23</div><div class="combat-label">CA</div></div>
-        <div class="combat-box"><div class="combat-val" id="g-init">+6</div><div class="combat-label">Iniciativa</div></div>
-        <div class="combat-box"><div class="combat-val" id="g-spd">30</div><div class="combat-label">Velocidad</div></div>
+        <div class="combat-box editable" onclick="editCombat('g','ac')" title="Editar CA"><div class="combat-val" id="g-ac"></div><div class="combat-label">CA</div></div>
+        <div class="combat-box"><div class="combat-val" id="g-init"></div><div class="combat-label">Iniciativa</div></div>
+        <div class="combat-box editable" onclick="editCombat('g','spd')" title="Editar velocidad"><div class="combat-val" id="g-spd"></div><div class="combat-label">Velocidad</div></div>
       </div>
       <div class="hp-display">
         <div class="hp-current" id="g-hp-cur">111</div>
@@ -297,72 +323,80 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-
     </div>
 
     <!-- SKILLS -->
-    <div class="panel panel-g">
+    <div data-sec="stats" class="panel panel-g">
       <div class="section-title">Habilidades</div>
       <div class="skills-list" id="g-skills"></div>
     </div>
 
     <!-- EQUIPMENT -->
-    <div class="panel panel-g full">
+    <div data-sec="eq" class="panel panel-g full">
       <div class="section-title">Equipamiento <button class="btn btn-add" onclick="openAddEq('g')">+ Añadir</button></div>
+      <input class="finder" id="g-eq-finder" type="search" placeholder="🔍 Buscar objeto…" oninput="renderEquipment('g')">
       <div class="eq-list" id="g-eq-list"></div>
     </div>
 
     <!-- ATTACKS -->
-    <div class="panel panel-g" style="grid-column: span 2">
+    <div data-sec="stats" class="panel panel-g" style="grid-column: span 2">
       <div class="section-title">Ataques</div>
       <div id="g-attacks"></div>
     </div>
 
     <!-- SAVING THROWS -->
-    <div class="panel panel-g">
+    <div data-sec="stats" class="panel panel-g">
       <div class="section-title">Tiradas de Salvación</div>
       <div class="saves-grid" id="g-saves"></div>
     </div>
 
     <!-- SPELLS -->
-    <div class="panel panel-g" style="grid-column: span 2">
+    <div data-sec="abil" class="panel panel-g" style="grid-column: span 2">
       <div class="section-title">Conjuros</div>
       <div id="g-spells"></div>
     </div>
 
     <!-- ABILITIES -->
-    <div class="panel panel-g full">
+    <div data-sec="abil" class="panel panel-g full">
       <div class="section-title">Rasgos y Habilidades <button class="btn btn-add" onclick="openAddAbility('g')">+ Añadir</button></div>
+      <input class="finder" id="g-abil-finder" type="search" placeholder="🔍 Buscar rasgo…" oninput="renderAbilities('g')">
       <div id="g-abilities"></div>
     </div>
   </div>
 </div>
 
 <!-- ZANTO PAGE -->
-<div class="char-page" id="page-z">
+<div class="char-page page-z" id="page-z">
   <div class="char-header panel-z" style="border-radius:10px;border:1px solid var(--border);">
     <div>
       <div class="char-name" style="color:var(--accent-z)">Zanto</div>
       <div class="char-info">Jedi Nv. 17 · Goblin · Neutral Bueno</div>
       <div class="char-meta">
         <span class="meta-pill">XP: 226.240</span>
-        <span class="meta-pill">Pasiva: 25</span>
+        <span class="meta-pill">Pasiva: <span id="z-passive"></span></span>
         <span class="meta-pill">13d8 HD</span>
         <span class="meta-pill">Prof: +6</span>
       </div>
     </div>
   </div>
 
-  <div class="grid3">
+  <div class="sub-tabs">
+    <button class="sub-tab active" id="z-sub-stats" onclick="showView('z','stats')">📊 Estadísticas</button>
+    <button class="sub-tab" id="z-sub-eq" onclick="showView('z','eq')">🎒 Equipamiento</button>
+    <button class="sub-tab" id="z-sub-abil" onclick="showView('z','abil')">✨ Habilidades</button>
+  </div>
+
+  <div class="grid3" id="z-grid" data-view="stats">
     <!-- STATS -->
-    <div class="panel panel-z">
+    <div data-sec="stats" class="panel panel-z">
       <div class="section-title">Estadísticas</div>
       <div class="stats-grid" id="z-stats"></div>
     </div>
 
     <!-- HP + COMBAT -->
-    <div class="panel panel-z">
+    <div data-sec="stats" class="panel panel-z">
       <div class="section-title">Combate</div>
       <div class="combat-stats" style="margin-bottom:10px">
-        <div class="combat-box"><div class="combat-val" id="z-ac">35</div><div class="combat-label">CA</div></div>
-        <div class="combat-box"><div class="combat-val" id="z-init">+5</div><div class="combat-label">Iniciativa</div></div>
-        <div class="combat-box"><div class="combat-val" id="z-spd">35</div><div class="combat-label">Velocidad</div></div>
+        <div class="combat-box editable" onclick="editCombat('z','ac')" title="Editar CA"><div class="combat-val" id="z-ac"></div><div class="combat-label">CA</div></div>
+        <div class="combat-box"><div class="combat-val" id="z-init"></div><div class="combat-label">Iniciativa</div></div>
+        <div class="combat-box editable" onclick="editCombat('z','spd')" title="Editar velocidad"><div class="combat-val" id="z-spd"></div><div class="combat-label">Velocidad</div></div>
       </div>
       <div class="hp-display">
         <div class="hp-current" id="z-hp-cur">76</div>
@@ -381,13 +415,13 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-
     </div>
 
     <!-- SKILLS -->
-    <div class="panel panel-z">
+    <div data-sec="stats" class="panel panel-z">
       <div class="section-title">Habilidades</div>
       <div class="skills-list" id="z-skills"></div>
     </div>
 
     <!-- FORCE POINTS -->
-    <div class="panel panel-z full">
+    <div data-sec="stats" class="panel panel-z full">
       <div class="section-title">Puntos de Fuerza</div>
       <div class="fp-tracker">
         <div class="fp-label">Fuerza Disponible</div>
@@ -404,31 +438,33 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-
     </div>
 
     <!-- EQUIPMENT -->
-    <div class="panel panel-z full">
+    <div data-sec="eq" class="panel panel-z full">
       <div class="section-title">Equipamiento <button class="btn btn-add" onclick="openAddEq('z')">+ Añadir</button></div>
+      <input class="finder" id="z-eq-finder" type="search" placeholder="🔍 Buscar objeto…" oninput="renderEquipment('z')">
       <div class="eq-list" id="z-eq-list"></div>
     </div>
 
     <!-- ATTACKS -->
-    <div class="panel panel-z">
+    <div data-sec="stats" class="panel panel-z">
       <div class="section-title">Ataques</div>
       <div id="z-attacks"></div>
     </div>
 
     <!-- SAVING THROWS -->
-    <div class="panel panel-z">
+    <div data-sec="stats" class="panel panel-z">
       <div class="section-title">Tiradas de Salvación</div>
       <div class="saves-grid" id="z-saves"></div>
     </div>
 
     <!-- ABILITIES -->
-    <div class="panel panel-z">
+    <div data-sec="abil" class="panel panel-z">
       <div class="section-title">Rasgos <button class="btn btn-add" onclick="openAddAbility('z')">+ Añadir</button></div>
+      <input class="finder" id="z-abil-finder" type="search" placeholder="🔍 Buscar rasgo…" oninput="renderAbilities('z')">
       <div id="z-abilities"></div>
     </div>
 
     <!-- FORCE POWERS -->
-    <div class="panel panel-z full">
+    <div data-sec="abil" class="panel panel-z full">
       <div class="section-title">Poderes de la Fuerza <button class="btn btn-add" onclick="openAddPower()">+ Añadir</button></div>
       <div id="z-powers"></div>
     </div>
@@ -518,6 +554,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-
 const DEFAULTS = {
   g: {
     stats: { str:19, dex:23, con:13, int:19, wis:11, cha:19 },
+    combat: { ac:23, spd:60 },
     hp: { max:111, current:111, temp:0 },
     spellSlots: { 1:{total:4,used:0}, 2:{total:3,used:0}, 3:{total:2,used:0} },
     equipment: [
@@ -562,6 +599,7 @@ const DEFAULTS = {
   },
   z: {
     stats: { str:10, dex:20, con:10, int:12, wis:28, cha:14 },
+    combat: { ac:35, spd:35 },
     hp: { max:76, current:76, temp:0 },
     fp: { max:68, current:68 },
     equipment: [
@@ -633,6 +671,9 @@ function loadState() {
     if (saved) state = JSON.parse(saved);
     else resetState();
   } catch(e) { resetState(); }
+  for (const ch of ['g','z']) {
+    if (!state[ch].combat) state[ch].combat = JSON.parse(JSON.stringify(DEFAULTS[ch].combat));
+  }
 }
 
 function resetState() {
@@ -685,41 +726,50 @@ function mod(val) { return Math.floor((val - 10) / 2); }
 function fmtMod(val) { const m = mod(val); return (m >= 0 ? '+' : '') + m; }
 
 const STAT_LABELS = { str:'FUE', dex:'DES', con:'CON', int:'INT', wis:'SAB', cha:'CAR' };
+// Skills: value = ability modifier + proficiency bonus (x2 with expertise).
+// prof: 0 = none, 1 = proficient, 2 = expertise. bonus = extra misc modifier.
+const PROF_BONUS = { g: 6, z: 6 };
 const SKILL_DATA = {
   g: [
-    {name:'Acrobacias',key:'dex',prof:true,val:6},{name:'Atletismo',key:'str',prof:false,val:1},
-    {name:'C. Arcano',key:'int',prof:true,val:1},{name:'Engaño',key:'cha',prof:false,val:1},
-    {name:'Historia',key:'int',prof:true,val:4},{name:'Interpretación',key:'cha',prof:true,val:4},
-    {name:'Intimidación',key:'cha',prof:true,val:4},{name:'Investigación',key:'int',prof:true,val:1},
-    {name:'Juego de Manos',key:'dex',prof:true,val:1},{name:'Medicina',key:'wis',prof:false,val:0},
-    {name:'Naturaleza',key:'int',prof:true,val:4},{name:'Percepción',key:'wis',prof:true,val:6},
-    {name:'Perspicacia',key:'wis',prof:true,val:6},{name:'Persuasión',key:'cha',prof:true,val:4},
-    {name:'Religión',key:'int',prof:true,val:4},{name:'Sigilo',key:'dex',prof:false,val:1},
-    {name:'Supervivencia',key:'wis',prof:false,val:0},{name:'T. Animales',key:'wis',prof:false,val:0}
+    {name:'Acrobacias',key:'dex',prof:0},{name:'Atletismo',key:'str',prof:1},
+    {name:'C. Arcano',key:'int',prof:1},{name:'Engaño',key:'cha',prof:1},
+    {name:'Historia',key:'int',prof:0},{name:'Interpretación',key:'cha',prof:2},
+    {name:'Intimidación',key:'cha',prof:0},{name:'Investigación',key:'int',prof:2},
+    {name:'Juego de Manos',key:'dex',prof:1},{name:'Medicina',key:'wis',prof:0},
+    {name:'Naturaleza',key:'int',prof:0},{name:'Percepción',key:'wis',prof:2},
+    {name:'Perspicacia',key:'wis',prof:1},{name:'Persuasión',key:'cha',prof:0},
+    {name:'Religión',key:'int',prof:0},{name:'Sigilo',key:'dex',prof:2},
+    {name:'Supervivencia',key:'wis',prof:0},{name:'T. Animales',key:'wis',prof:0}
   ],
   z: [
-    {name:'Acrobacias',key:'dex',prof:true,val:11},{name:'Atletismo',key:'str',prof:false,val:0},
-    {name:'C. Arcano',key:'int',prof:false,val:1},{name:'Engaño',key:'cha',prof:false,val:2},
-    {name:'Historia',key:'int',prof:false,val:1},{name:'Interpretación',key:'cha',prof:false,val:2},
-    {name:'Intimidación',key:'cha',prof:false,val:2},{name:'Investigación',key:'int',prof:false,val:1},
-    {name:'Juego de Manos',key:'dex',prof:false,val:1},{name:'Medicina',key:'wis',prof:false,val:1},
-    {name:'Naturaleza',key:'int',prof:false,val:1},{name:'Percepción',key:'wis',prof:false,val:1},
-    {name:'Perspicacia',key:'wis',prof:false,val:1},{name:'Persuasión',key:'cha',prof:false,val:2},
-    {name:'Religión',key:'int',prof:false,val:1},{name:'Sigilo',key:'dex',prof:false,val:1},
-    {name:'Supervivencia',key:'wis',prof:true,val:9},{name:'T. Animales',key:'wis',prof:true,val:9}
+    {name:'Acrobacias',key:'dex',prof:1},{name:'Atletismo',key:'str',prof:0},
+    {name:'C. Arcano',key:'int',prof:0},{name:'Engaño',key:'cha',prof:0},
+    {name:'Historia',key:'int',prof:0},{name:'Interpretación',key:'cha',prof:0},
+    {name:'Intimidación',key:'cha',prof:0},{name:'Investigación',key:'int',prof:0},
+    {name:'Juego de Manos',key:'dex',prof:0},{name:'Medicina',key:'wis',prof:0},
+    {name:'Naturaleza',key:'int',prof:0},{name:'Percepción',key:'wis',prof:0},
+    {name:'Perspicacia',key:'wis',prof:0},{name:'Persuasión',key:'cha',prof:0},
+    {name:'Religión',key:'int',prof:0},{name:'Sigilo',key:'dex',prof:0},
+    {name:'Supervivencia',key:'wis',prof:1},{name:'T. Animales',key:'wis',prof:1}
   ]
 };
 
 const SAVE_DATA = {
-  g: [{name:'FUE',prof:true,val:4},{name:'DES',prof:true,val:1},{name:'CON',prof:false,val:1},
-       {name:'INT',prof:true,val:1},{name:'SAB',prof:true,val:6},{name:'CAR',prof:false,val:4}],
-  z: [{name:'FUE',prof:false,val:0},{name:'DES',prof:true,val:1},{name:'CON',prof:false,val:0},
-       {name:'INT',prof:true,val:1},{name:'SAB',prof:true,val:1},{name:'CAR',prof:false,val:2}]
+  g: [{name:'FUE',key:'str',prof:0},{name:'DES',key:'dex',prof:1},{name:'CON',key:'con',prof:0},
+       {name:'INT',key:'int',prof:1},{name:'SAB',key:'wis',prof:1},{name:'CAR',key:'cha',prof:0}],
+  z: [{name:'FUE',key:'str',prof:0},{name:'DES',key:'dex',prof:1},{name:'CON',key:'con',prof:0},
+       {name:'INT',key:'int',prof:1},{name:'SAB',key:'wis',prof:1},{name:'CAR',key:'cha',prof:0}]
 };
+
+function skillValue(ch, s) {
+  return mod(state[ch].stats[s.key]) + (s.prof || 0) * PROF_BONUS[ch] + (s.bonus || 0);
+}
+function fmtBonus(v) { return (v >= 0 ? '+' : '') + v; }
 
 // ===== RENDER =====
 function renderAll() {
   renderStats('g'); renderStats('z');
+  renderCombat('g'); renderCombat('z');
   renderHP('g'); renderHP('z');
   renderSkills('g'); renderSkills('z');
   renderSaves('g'); renderSaves('z');
@@ -730,6 +780,14 @@ function renderAll() {
   renderFP();
   renderPowers();
   renderSpells();
+}
+
+function renderCombat(ch) {
+  const c = state[ch].combat;
+  document.getElementById(ch+'-ac').textContent = c.ac;
+  document.getElementById(ch+'-spd').textContent = c.spd;
+  document.getElementById(ch+'-init').textContent = fmtMod(state[ch].stats.dex);
+  if (ch === 'g') updateDescarga();
 }
 
 function renderStats(ch) {
@@ -764,11 +822,13 @@ function renderFP() {
 
 function renderSkills(ch) {
   const el = document.getElementById(ch+'-skills');
+  const perc = SKILL_DATA[ch].find(s => s.name === 'Percepción');
+  document.getElementById(ch+'-passive').textContent = 10 + skillValue(ch, perc);
   el.innerHTML = SKILL_DATA[ch].map(s => `
-    <div class="skill-row">
-      <div class="skill-dot ${s.prof ? 'dot-prof' : 'dot-none'}"></div>
+    <div class="skill-row" title="${STAT_LABELS[s.key]} ${fmtMod(state[ch].stats[s.key])}${s.prof ? ' + comp. ' + fmtBonus(s.prof * PROF_BONUS[ch]) : ''}${s.prof === 2 ? ' (experto)' : ''}">
+      <div class="skill-dot ${s.prof === 2 ? 'dot-exp' : s.prof ? 'dot-prof' : 'dot-none'}"></div>
       <span class="skill-name">${s.name}</span>
-      <span class="skill-val">${s.val >= 0 ? '+' : ''}${s.val}</span>
+      <span class="skill-val">${fmtBonus(skillValue(ch, s))}</span>
     </div>
   `).join('');
 }
@@ -779,17 +839,34 @@ function renderSaves(ch) {
     <div class="save-row">
       <div class="save-dot ${s.prof ? 'dot-prof' : 'dot-none'}"></div>
       <span class="skill-name">${s.name}</span>
-      <span class="skill-val">${s.val >= 0 ? '+' : ''}${s.val}</span>
+      <span class="skill-val">${fmtBonus(skillValue(ch, s))}</span>
     </div>
   `).join('');
+}
+
+// ===== FINDER =====
+function norm(str) { return String(str).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+function finderQuery(id) { const el = document.getElementById(id); return el ? norm(el.value.trim()) : ''; }
+function highlight(text, q) {
+  if (!q) return text;
+  const n = norm(text);
+  let out = '', pos = 0, i;
+  while ((i = n.indexOf(q, pos)) !== -1) {
+    out += text.slice(pos, i) + '<mark class="hit">' + text.slice(i, i + q.length) + '</mark>';
+    pos = i + q.length;
+  }
+  return out + text.slice(pos);
 }
 
 function renderEquipment(ch) {
   const el = document.getElementById(ch+'-eq-list');
   const eq = state[ch].equipment;
-  el.innerHTML = eq.map((item, i) => `
+  const q = finderQuery(ch+'-eq-finder');
+  const rows = eq.map((item, i) => ({item, i})).filter(({item}) => !q || norm(item.name).includes(q));
+  if (!rows.length) { el.innerHTML = `<div class="finder-empty">Sin resultados para "${q}"</div>`; return; }
+  el.innerHTML = rows.map(({item, i}) => `
     <div class="eq-item">
-      <span class="eq-name">${item.name}</span>
+      <span class="eq-name">${highlight(item.name, q)}</span>
       <div class="eq-qty-ctrl">
         <button class="eq-qty-btn" onclick="changeQty('${ch}',${i},-1)">−</button>
         <span class="eq-qty">${item.qty}</span>
@@ -803,13 +880,16 @@ function renderEquipment(ch) {
 function renderAbilities(ch) {
   const el = document.getElementById(ch+'-abilities');
   const abs = state[ch].abilities;
-  el.innerHTML = abs.map((a, i) => `
+  const q = finderQuery(ch+'-abil-finder');
+  const rows = abs.map((a, i) => ({a, i})).filter(({a}) => !q || norm(a.name + ' ' + a.desc).includes(q));
+  if (!rows.length) { el.innerHTML = `<div class="finder-empty">Sin resultados para "${q}"</div>`; return; }
+  el.innerHTML = rows.map(({a, i}) => `
     <div class="ability-item">
       <div class="ability-top">
-        <span class="ability-name">${a.name}</span>
+        <span class="ability-name">${highlight(a.name, q)}</span>
         <button class="btn-del" onclick="removeAbility('${ch}',${i})">×</button>
       </div>
-      <div class="ability-desc">${a.desc}</div>
+      <div class="ability-desc">${highlight(a.desc, q)}</div>
     </div>
   `).join('');
 }
@@ -842,7 +922,7 @@ function renderAttacksG() {
     <div class="attack-card">
       <div class="attack-name">⚡ Descarga (Traje)</div>
       <div class="attack-desc">Daño del traje especial: <code>cargas × 10 + movimiento / 2</code></div>
-      <div class="attack-formula">Movimiento base: 30 pies + 5 pies/carga extra</div>
+      <div class="attack-formula" id="descarga-base">Movimiento base: velocidad + 5 pies/carga</div>
       <div class="descarga-controls">
         <span class="descarga-label">Nº de cargas:</span>
         <input class="descarga-input" id="descarga-charges" type="number" min="0" max="20" value="3" oninput="updateDescarga()">
@@ -986,6 +1066,13 @@ function renderPowers() {
 // ===== INTERACTIONS =====
 let currentChar = 'g';
 
+function showView(ch, view) {
+  document.getElementById(ch+'-grid').dataset.view = view;
+  for (const v of ['stats','eq','abil'])
+    document.getElementById(`${ch}-sub-${v}`).classList.toggle('active', v === view);
+  try { localStorage.setItem('ct-view-'+ch, view); } catch(e) {}
+}
+
 function showChar(ch) {
   currentChar = ch;
   document.getElementById('page-g').classList.toggle('active', ch==='g');
@@ -1120,21 +1207,40 @@ function confirmAddPower() {
   closeModal('modal-power');
 }
 
-let editStatChar = '', editStatKey = '';
-function editStat(ch, key) {
-  editStatChar = ch; editStatKey = key;
-  document.getElementById('modal-stat-title').textContent = `Editar ${STAT_LABELS[key]}`;
-  document.getElementById('modal-stat-val').value = state[ch].stats[key];
+let editStatChar = '', editStatKey = '', editStatKind = 'stat';
+const COMBAT_LABELS = { ac: 'CA', spd: 'Velocidad (pies)' };
+function openStatModal(title, value, min, max) {
+  const input = document.getElementById('modal-stat-val');
+  document.getElementById('modal-stat-title').textContent = title;
+  input.min = min; input.max = max; input.value = value;
   openModal('modal-stat');
-  setTimeout(() => document.getElementById('modal-stat-val').select(), 100);
+  setTimeout(() => input.select(), 100);
+}
+function editStat(ch, key) {
+  editStatChar = ch; editStatKey = key; editStatKind = 'stat';
+  openStatModal(`Editar ${STAT_LABELS[key]}`, state[ch].stats[key], 1, 30);
+}
+function editCombat(ch, key) {
+  editStatChar = ch; editStatKey = key; editStatKind = 'combat';
+  openStatModal(`Editar ${COMBAT_LABELS[key]}`, state[ch].combat[key], 0, 999);
 }
 function confirmEditStat() {
-  const val = parseInt(document.getElementById('modal-stat-val').value);
-  if (!isNaN(val) && val >= 1 && val <= 30) {
-    state[editStatChar].stats[editStatKey] = val;
-    saveState();
-    renderStats(editStatChar);
-    if (editStatChar === 'z') renderAttacksZ();
+  const input = document.getElementById('modal-stat-val');
+  const val = parseInt(input.value);
+  if (!isNaN(val) && val >= +input.min && val <= +input.max) {
+    if (editStatKind === 'combat') {
+      state[editStatChar].combat[editStatKey] = val;
+      saveState();
+      renderCombat(editStatChar);
+    } else {
+      state[editStatChar].stats[editStatKey] = val;
+      saveState();
+      renderStats(editStatChar);
+      renderCombat(editStatChar);
+      renderSkills(editStatChar);
+      renderSaves(editStatChar);
+      if (editStatChar === 'z') renderAttacksZ();
+    }
   }
   closeModal('modal-stat');
 }
@@ -1269,19 +1375,25 @@ function openEditMythlyf() {
   renderAttacksG();
 }
 
+function descargaCalc() {
+  const input = document.getElementById('descarga-charges');
+  const charges = input ? parseInt(input.value) || 0 : 0;
+  const base = state.g.combat.spd;
+  const movement = base + charges * 5;
+  return { charges, base, movement, dmg: charges * 10 + Math.floor(movement / 2) };
+}
+
 function updateDescarga() {
-  const charges = parseInt(document.getElementById('descarga-charges').value) || 0;
-  const movement = 30 + charges * 5;
-  const dmg = charges * 10 + Math.floor(movement / 2);
+  if (!document.getElementById('descarga-formula')) return; // attacks panel not rendered yet
+  const { charges, base, movement, dmg } = descargaCalc();
+  document.getElementById('descarga-base').textContent = `Movimiento base: ${base} pies (velocidad) + 5 pies/carga`;
   document.getElementById('descarga-movement').textContent = `Movimiento: ${movement} pies`;
   document.getElementById('descarga-formula').textContent =
     `${charges}×10 + ${movement}/2 = ${charges*10} + ${Math.floor(movement/2)} = ${dmg}`;
 }
 
 function rollDescarga() {
-  const charges = parseInt(document.getElementById('descarga-charges').value) || 0;
-  const movement = 30 + charges * 5;
-  const dmg = charges * 10 + Math.floor(movement / 2);
+  const { charges, movement, dmg } = descargaCalc();
   showRollResult('descarga-result', `Descarga (${charges} cargas, ${movement} pies mov)`,
     dmg, `${charges}×10 + floor(${movement}/2) = ${charges*10} + ${Math.floor(movement/2)}`);
 }
@@ -1381,6 +1493,10 @@ document.getElementById('modal-stat-val').addEventListener('keydown', e => { if(
 // ===== INIT =====
 loadState();
 renderAll();
+for (const ch of ['g','z']) {
+  let v = null; try { v = localStorage.getItem('ct-view-'+ch); } catch(e) {}
+  if (['stats','eq','abil'].includes(v)) showView(ch, v);
+}
 updateDescarga();
 </script>
 </body>
