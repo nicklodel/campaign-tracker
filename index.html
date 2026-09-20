@@ -171,6 +171,8 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-
 .power-body { padding: 0 12px 10px; display: none; font-size: 12px; line-height: 1.6; color: var(--muted); }
 .power-body.open { display: block; }
 .power-actions { display: flex; gap: 6px; align-items: center; margin-top: 8px; }
+.power-flash { font-size: 11px; font-weight: 600; white-space: nowrap; transition: opacity .4s; }
+@media (max-width: 480px) { .power-header { flex-wrap: wrap; } .power-flash { flex-basis: 100%; } }
 
 /* ABILITIES */
 .ability-item { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 5px; }
@@ -464,17 +466,17 @@ mark.hit { background: rgba(212,175,55,.35); color: inherit; border-radius: 2px;
       <div class="saves-grid" id="z-saves"></div>
     </div>
 
+    <!-- FORCE POWERS -->
+    <div data-sec="abil" class="panel panel-z full">
+      <div class="section-title">Poderes de la Fuerza <button class="btn btn-add" onclick="openAddPower()">+ Añadir</button></div>
+      <div id="z-powers"></div>
+    </div>
+
     <!-- ABILITIES -->
     <div data-sec="abil" class="panel panel-z">
       <div class="section-title">Rasgos <button class="btn btn-add" onclick="openAddAbility('z')">+ Añadir</button></div>
       <input class="finder" id="z-abil-finder" type="search" placeholder="🔍 Buscar rasgo…" oninput="renderAbilities('z')">
       <div id="z-abilities"></div>
-    </div>
-
-    <!-- FORCE POWERS -->
-    <div data-sec="abil" class="panel panel-z full">
-      <div class="section-title">Poderes de la Fuerza <button class="btn btn-add" onclick="openAddPower()">+ Añadir</button></div>
-      <div id="z-powers"></div>
     </div>
   </div>
 </div>
@@ -1075,7 +1077,9 @@ function renderPowers() {
         <span class="power-title">${p.name}</span>
         ${p.cost > 0 ? `<span class="power-cost">${p.cost} PF</span>` : '<span class="power-cost">0 PF</span>'}
         <span style="color:var(--muted);font-size:11px;margin-left:6px">${p.time||''}</span>
-        <span id="power-chevron-${i}" style="color:var(--muted);margin-left:8px">▼</span>
+        <span class="power-flash" id="power-flash-${i}"></span>
+        ${p.cost > 0 ? `<button class="btn-cast" onclick="event.stopPropagation(); castPower(${i})" title="Usar (−${p.cost} PF)">⚡ Usar</button>` : ''}
+        <span id="power-chevron-${i}" style="color:var(--muted);margin-left:4px">▼</span>
       </div>
       <div class="power-body" id="power-body-${i}">
         <div style="margin-bottom:8px">${p.desc}</div>
@@ -1281,22 +1285,26 @@ function togglePower(i) {
   chev.textContent = open ? '▲' : '▼';
 }
 
+const powerFlashTimers = {};
+function powerFeedback(i, msg, color) {
+  const r = document.getElementById(`power-cast-result-${i}`);
+  r.style.display = 'block'; r.style.color = color; r.textContent = msg;
+  const f = document.getElementById(`power-flash-${i}`);
+  f.style.color = color; f.style.opacity = 1; f.textContent = msg;
+  clearTimeout(powerFlashTimers[i]);
+  powerFlashTimers[i] = setTimeout(() => { f.style.opacity = 0; }, 3500);
+}
+
 function castPower(i) {
   const p = state.z.powers[i];
   const fp = state.z.fp;
   if (fp.current < p.cost) {
-    const r = document.getElementById(`power-cast-result-${i}`);
-    r.style.display = 'block';
-    r.style.color = 'var(--red)';
-    r.textContent = `❌ Sin PF suficientes (necesitas ${p.cost}, tienes ${fp.current})`;
+    powerFeedback(i, `❌ Sin PF (necesitas ${p.cost}, tienes ${fp.current})`, 'var(--red)');
     return;
   }
   fp.current -= p.cost;
   saveState(); renderFP();
-  const r = document.getElementById(`power-cast-result-${i}`);
-  r.style.display = 'block';
-  r.style.color = 'var(--accent-z)';
-  r.textContent = `✓ Poder usado. −${p.cost} PF → quedan ${fp.current}/${fp.max}`;
+  powerFeedback(i, `✓ −${p.cost} PF → ${fp.current}/${fp.max}`, 'var(--accent-z)');
 }
 
 function toggleSlot(ch, lvl, i) {
