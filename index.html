@@ -28,6 +28,10 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-
 .char-tab:hover { color: var(--text); }
 .char-tab.active-g { color: var(--accent-g); border-bottom-color: var(--accent-g); }
 .char-tab.active-z { color: var(--accent-z); border-bottom-color: var(--accent-z); }
+.backup-bar { display: flex; align-items: center; gap: 6px; padding: 0 10px; }
+.backup-btn { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 5px 9px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+.backup-btn:hover { color: var(--text); border-color: var(--muted); }
+@media (max-width: 480px) { .backup-btn span { display: none; } .char-tab { padding: 14px 8px; font-size: 14px; } }
 
 /* LAYOUT */
 .char-page { display: none; padding: 16px; max-width: 1400px; margin: 0 auto; }
@@ -239,6 +243,11 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-
 <div class="char-tabs">
   <div class="char-tab active-g" id="tab-g" onclick="showChar('g')">⚔ GARISON</div>
   <div class="char-tab" id="tab-z" onclick="showChar('z')">✦ ZANTO</div>
+  <div class="backup-bar">
+    <button class="backup-btn" onclick="exportState()" title="Descargar copia de seguridad (JSON)">💾 <span>Backup</span></button>
+    <button class="backup-btn" onclick="document.getElementById('import-file').click()" title="Restaurar desde una copia de seguridad">📂 <span>Restaurar</span></button>
+    <input type="file" id="import-file" accept=".json,application/json" style="display:none" onchange="importState(this)">
+  </div>
 </div>
 
 <!-- GARISON PAGE -->
@@ -635,6 +644,40 @@ function resetState() {
 
 function saveState() {
   localStorage.setItem('campaignTracker', JSON.stringify(state));
+}
+
+// ===== BACKUP / RESTORE =====
+// localStorage is per-browser and per-origin (file://, localhost, github.io are all
+// separate), so a JSON file is the reliable way to move the sheet between devices.
+function exportState() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `campaign-tracker-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function importState(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!data || !data.g || !data.z) throw new Error('formato');
+      if (!confirm(`Restaurar "${file.name}"? Esto reemplaza los datos actuales de ambos personajes.`)) return;
+      state = data;
+      saveState();
+      renderAll();
+      updateDescarga();
+    } catch (e) {
+      alert('El archivo no es una copia de seguridad válida del Campaign Tracker.');
+    } finally {
+      input.value = '';
+    }
+  };
+  reader.readAsText(file);
 }
 
 // ===== STAT HELPERS =====
